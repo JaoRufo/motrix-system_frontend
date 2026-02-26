@@ -1,5 +1,5 @@
 <template>
-  <q-header elevated class="bg-white text-dark">
+  <q-header elevated :class="headerClass">
     <q-toolbar>
       <q-toolbar-title class="text-weight-bold"> Sistema de Gestão </q-toolbar-title>
 
@@ -33,11 +33,16 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 
 const $q = useQuasar()
 const router = useRouter()
+
+const headerClass = computed(() => {
+  return $q.dark.isActive ? 'bg-dark text-white' : 'bg-white text-dark'
+})
 
 function toggleDark() {
   $q.dark.set(!$q.dark.isActive)

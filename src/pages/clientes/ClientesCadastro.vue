@@ -2,7 +2,9 @@
   <q-page class="q-pa-md">
     <div class="row items-center q-mb-md">
       <q-btn flat round dense icon="arrow_back" @click="$router.back()" class="q-mr-sm" />
-      <div class="text-h6 text-weight-bold">{{ isEdit ? 'Editar Cliente' : 'Cadastro de Clientes' }}</div>
+      <div class="text-h6 text-weight-bold">
+        {{ isEdit ? 'Editar Cliente' : 'Cadastro de Clientes' }}
+      </div>
     </div>
 
     <q-card class="q-pa-md shadow-2" bordered>
@@ -16,7 +18,13 @@
         </div>
 
         <div class="col-12 col-md-6">
-          <q-input v-model="form.telefone" label="Telefone *" outlined dense mask="(##) #####-####" />
+          <q-input
+            v-model="form.telefone"
+            label="Telefone *"
+            outlined
+            dense
+            mask="(##) #####-####"
+          />
         </div>
 
         <div class="col-12 col-md-6">
@@ -32,9 +40,20 @@
 
       <div class="text-subtitle1 text-weight-bold q-mb-sm">Veículos</div>
 
-      <div v-for="(veiculo, index) in form.veiculos" :key="index" class="row q-col-gutter-md q-mb-sm">
+      <div
+        v-for="(veiculo, index) in form.veiculos"
+        :key="index"
+        class="row q-col-gutter-md q-mb-sm"
+      >
         <div class="col-12 col-md-3">
-          <q-input v-model="veiculo.placa" label="Placa *" outlined dense />
+          <q-input
+            v-model="veiculo.placa"
+            label="Placa *"
+            outlined
+            dense
+            @update:model-value="(val) => (veiculo.placa = formatarPlaca(val))"
+            maxlength="8"
+          />
         </div>
 
         <div class="col-12 col-md-3">
@@ -50,11 +69,27 @@
         </div>
 
         <div class="col-12 col-md-1 flex flex-center">
-          <q-btn v-if="form.veiculos.length > 1" icon="delete" flat round color="negative" @click="removerVeiculo(index)" />
+          <q-btn
+            v-if="form.veiculos.length > 1"
+            icon="delete"
+            flat
+            round
+            color="negative"
+            @click="removerVeiculo(index)"
+          >
+            <q-tooltip>Remover Veículo</q-tooltip>
+          </q-btn>
         </div>
       </div>
 
-      <q-btn label="Adicionar Veículo" flat icon="add" color="primary" @click="adicionarVeiculo" class="q-mb-md" />
+      <q-btn
+        label="Adicionar Veículo"
+        flat
+        icon="add"
+        color="primary"
+        @click="adicionarVeiculo"
+        class="q-mb-md"
+      />
 
       <div class="q-mt-md text-right">
         <q-btn label="Cancelar" flat color="grey" @click="$router.back()" class="q-mr-sm" />
@@ -69,6 +104,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { clienteService } from 'src/services/clienteService'
+import { formatarPlaca } from 'src/utils/formatters'
 
 const router = useRouter()
 const route = useRoute()

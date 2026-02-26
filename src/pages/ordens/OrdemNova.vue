@@ -9,7 +9,7 @@
 
     <q-card class="q-pa-md shadow-2" bordered>
       <div class="row q-col-gutter-md">
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-md-3">
           <q-select
             v-model="clienteSelecionado"
             :options="clientesOptions"
@@ -24,15 +24,13 @@
           >
             <template v-slot:no-option>
               <q-item>
-                <q-item-section class="text-grey">
-                  Nenhum cliente encontrado
-                </q-item-section>
+                <q-item-section class="text-grey"> Nenhum cliente encontrado </q-item-section>
               </q-item>
             </template>
           </q-select>
         </div>
 
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-md-3">
           <q-select
             v-model="veiculoSelecionado"
             :options="veiculosOptions"
@@ -53,44 +51,59 @@
           </q-select>
         </div>
 
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-md-3">
           <q-input v-model.number="kmAtual" label="KM Atual *" outlined dense type="number" />
         </div>
 
-        <div class="col-12">
-          <q-input v-model="observacoes" label="Observações / Relato do Cliente" outlined dense type="textarea" rows="3" />
+        <div class="col-12 col-md-3">
+          <q-select
+            v-model="status"
+            :options="statusOptions"
+            label="Status *"
+            outlined
+            dense
+            @update:model-value="onStatusChange"
+          />
         </div>
-      </div>
 
-      <!-- HISTÓRICO DO VEÍCULO -->
-      <div v-if="historicoVeiculo.length > 0" class="q-mt-md">
-        <q-expansion-item label="Último Serviço" icon="history" header-class="bg-blue-1">
-          <q-card>
-            <q-card-section>
-              <div class="text-weight-bold">Data: {{ new Date(historicoVeiculo[0].data).toLocaleDateString() }}</div>
-              <div>KM: {{ historicoVeiculo[0].kmAtual }}</div>
-              <div class="q-mt-sm text-weight-bold">Serviços:</div>
-              <ul>
-                <li v-for="(servico, idx) in historicoVeiculo[0].maoObra" :key="idx">
-                  {{ servico.descricao }} - R$ {{ servico.valor.toFixed(2) }}
-                </li>
-              </ul>
-              <div class="text-weight-bold q-mt-sm">Peças:</div>
-              <ul>
-                <li v-for="(peca, idx) in historicoVeiculo[0].pecas" :key="idx">
-                  {{ peca.nome }} - R$ {{ peca.valor.toFixed(2) }}
-                </li>
-              </ul>
-              <div class="text-weight-bold q-mt-sm">Total: R$ {{ historicoVeiculo[0].total.toFixed(2) }}</div>
-            </q-card-section>
-          </q-card>
-        </q-expansion-item>
+        <div class="col-12">
+          <q-input
+            v-model="descricaoProblema"
+            label="Descrição do Problema *"
+            outlined
+            dense
+            type="textarea"
+            rows="3"
+          />
+        </div>
+
+        <div class="col-12">
+          <q-input
+            v-model="observacoes"
+            label="Observações Adicionais"
+            outlined
+            dense
+            type="textarea"
+            rows="2"
+          />
+        </div>
+
+        <div v-if="status === 'Cancelada'" class="col-12">
+          <q-input
+            v-model="motivoCancelamento"
+            label="Motivo do Cancelamento *"
+            outlined
+            dense
+            type="textarea"
+            rows="2"
+          />
+        </div>
       </div>
 
       <q-separator class="q-my-md" />
 
       <!-- PEÇAS -->
-      <div class="text-subtitle1 text-weight-bold q-mb-sm">Peças</div>
+      <div class="text-subtitle1 text-weight-bold q-mb-sm">Peças Utilizadas</div>
 
       <div v-for="(peca, index) in pecas" :key="index" class="row q-col-gutter-md q-mb-sm">
         <div class="col-5">
@@ -98,11 +111,13 @@
         </div>
 
         <div class="col-3">
-          <q-input v-model.number="peca.valor" type="number" label="Valor" dense outlined />
+          <q-input v-model.number="peca.valor" type="number" label="Valor (R$)" dense outlined />
         </div>
 
         <div class="col-2 flex flex-center">
-          <q-btn icon="delete" flat color="negative" @click="removerPeca(index)" />
+          <q-btn icon="delete" flat color="negative" @click="removerPeca(index)">
+            <q-tooltip>Remover Peça</q-tooltip>
+          </q-btn>
         </div>
       </div>
 
@@ -126,11 +141,13 @@
         </div>
 
         <div class="col-3">
-          <q-input v-model.number="mao.valor" type="number" label="Valor" dense outlined />
+          <q-input v-model.number="mao.valor" type="number" label="Valor (R$)" dense outlined />
         </div>
 
         <div class="col-2 flex flex-center">
-          <q-btn icon="delete" flat color="negative" @click="removerMao(index)" />
+          <q-btn icon="delete" flat color="negative" @click="removerMao(index)">
+            <q-tooltip>Remover Serviço</q-tooltip>
+          </q-btn>
         </div>
       </div>
 
@@ -142,7 +159,13 @@
 
       <div class="q-mt-md text-right">
         <q-btn label="Cancelar" flat color="grey" @click="$router.back()" class="q-mr-sm" />
-        <q-btn label="Salvar" color="primary" @click="salvar" :loading="salvando" />
+        <q-btn
+          label="Salvar"
+          color="primary"
+          @click="salvar"
+          :loading="salvando"
+          class="btn-save"
+        />
       </div>
     </q-card>
   </q-page>
@@ -161,14 +184,18 @@ const $q = useQuasar()
 const clienteSelecionado = ref(null)
 const veiculoSelecionado = ref(null)
 const kmAtual = ref(0)
+const status = ref('Aberta')
+const descricaoProblema = ref('')
+const observacoes = ref('')
+const motivoCancelamento = ref('')
 const pecas = ref([])
 const maoObra = ref([])
 const clientesOptions = ref([])
 const todosClientes = ref([])
 const veiculosOptions = ref([])
-const historicoVeiculo = ref([])
 const salvando = ref(false)
-const observacoes = ref('')
+
+const statusOptions = ['Aberta', 'Em Andamento', 'Aguardando Orçamento', 'Finalizada', 'Cancelada']
 
 const isEdit = computed(() => !!route.params.id)
 
@@ -178,6 +205,12 @@ const total = computed(() => {
   return totalPecas + totalMao
 })
 
+function onStatusChange(newStatus) {
+  if (newStatus !== 'Cancelada') {
+    motivoCancelamento.value = ''
+  }
+}
+
 function filtrarClientes(val, update) {
   update(() => {
     if (val === '') {
@@ -185,7 +218,7 @@ function filtrarClientes(val, update) {
     } else {
       const needle = val.toLowerCase()
       clientesOptions.value = todosClientes.value.filter(
-        (c) => c.nome.toLowerCase().indexOf(needle) > -1
+        (c) => c.nome.toLowerCase().indexOf(needle) > -1,
       )
     }
   })
@@ -193,7 +226,6 @@ function filtrarClientes(val, update) {
 
 function selecionarCliente(cliente) {
   veiculoSelecionado.value = null
-  historicoVeiculo.value = []
   if (cliente && cliente.veiculos) {
     veiculosOptions.value = cliente.veiculos.map((v) => ({
       label: `${v.modelo} - ${v.placa}`,
@@ -208,21 +240,7 @@ function selecionarCliente(cliente) {
 function selecionarVeiculo(veiculo) {
   if (veiculo && veiculo.value) {
     kmAtual.value = veiculo.value.kmAtual || 0
-    carregarHistorico()
   }
-}
-
-function carregarHistorico() {
-  if (!clienteSelecionado.value || !veiculoSelecionado.value) return
-
-  const ordens = JSON.parse(localStorage.getItem('ordens') || '[]')
-  historicoVeiculo.value = ordens
-    .filter(
-      (o) =>
-        o.clienteId == clienteSelecionado.value.id &&
-        o.veiculoPlaca === veiculoSelecionado.value.value.placa
-    )
-    .sort((a, b) => b.data - a.data)
 }
 
 function adicionarPeca() {
@@ -267,6 +285,16 @@ function salvar() {
     return
   }
 
+  if (!descricaoProblema.value) {
+    $q.notify({ type: 'negative', message: 'Descreva o problema relatado' })
+    return
+  }
+
+  if (status.value === 'Cancelada' && !motivoCancelamento.value) {
+    $q.notify({ type: 'negative', message: 'Informe o motivo do cancelamento' })
+    return
+  }
+
   salvando.value = true
 
   try {
@@ -278,12 +306,14 @@ function salvar() {
       veiculo: veiculoSelecionado.value.label,
       veiculoPlaca: veiculoSelecionado.value.value.placa,
       kmAtual: kmAtual.value,
+      status: status.value,
+      descricaoProblema: descricaoProblema.value,
       observacoes: observacoes.value,
+      motivoCancelamento: status.value === 'Cancelada' ? motivoCancelamento.value : null,
       pecas: pecas.value.filter((p) => p.nome),
       maoObra: maoObra.value.filter((m) => m.descricao),
       total: total.value,
       data: Date.now(),
-      status: 'Aberta',
     }
 
     if (isEdit.value) {
@@ -295,15 +325,17 @@ function salvar() {
 
     localStorage.setItem('ordens', JSON.stringify(ordens))
 
-    // Atualizar KM do veículo
-    const cliente = clienteService.buscarPorId(clienteSelecionado.value.id)
-    if (cliente) {
-      const veiculoIndex = cliente.veiculos.findIndex(
-        (v) => v.placa === veiculoSelecionado.value.value.placa
-      )
-      if (veiculoIndex !== -1) {
-        cliente.veiculos[veiculoIndex].kmAtual = kmAtual.value
-        clienteService.atualizar(cliente.id, cliente)
+    // Atualizar KM do veículo se finalizada ou cancelada
+    if (status.value === 'Finalizada' || status.value === 'Cancelada') {
+      const cliente = clienteService.buscarPorId(clienteSelecionado.value.id)
+      if (cliente) {
+        const veiculoIndex = cliente.veiculos.findIndex(
+          (v) => v.placa === veiculoSelecionado.value.value.placa,
+        )
+        if (veiculoIndex !== -1) {
+          cliente.veiculos[veiculoIndex].kmAtual = kmAtual.value
+          clienteService.atualizar(cliente.id, cliente)
+        }
       }
     }
 
@@ -337,11 +369,25 @@ onMounted(() => {
           kmAtual.value = ordem.kmAtual
         }
       }
+      status.value = ordem.status || 'Aberta'
+      descricaoProblema.value = ordem.descricaoProblema || ''
       observacoes.value = ordem.observacoes || ''
+      motivoCancelamento.value = ordem.motivoCancelamento || ''
       pecas.value = ordem.pecas || []
       maoObra.value = ordem.maoObra || []
-      carregarHistorico()
     }
   }
 })
 </script>
+
+<style scoped>
+.btn-save {
+  background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.btn-save:hover {
+  box-shadow: 0 6px 16px rgba(255, 107, 53, 0.4);
+  transform: translateY(-2px);
+}
+</style>
