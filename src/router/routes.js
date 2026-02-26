@@ -12,11 +12,11 @@ const routes = [
         component: () => import('pages/ordens/OrdemConsulta.vue'),
       },
       {
-        path: '/ordens/nova',
+        path: '/ordens/nova/:id?',
         component: () => import('pages/ordens/OrdemNova.vue'),
       },
       {
-        path: '/clientes/cadastro',
+        path: '/clientes/cadastro/:id?',
         component: () => import('pages/clientes/ClientesCadastro.vue'),
       },
       {
