@@ -1,9 +1,12 @@
 <template>
   <q-drawer show-if-above side="left" bordered :width="260" class="sidebar">
     <div class="sidebar-header">
-      <q-icon name="build_circle" size="48px" class="logo-icon" />
-      <div class="text-h5 text-weight-bold q-mt-sm">Motrix System</div>
-      <div class="text-caption text-grey-4">Gestão Inteligente</div>
+      <img
+        src="../../assets/motriz-system-logo-new-removebg.png"
+        alt="Motrix System"
+        class="sidebar-logo"
+      />
+      <div class="text-caption text-grey-6 q-mt-sm">Gestão Inteligente</div>
     </div>
 
     <q-separator class="main-separator" />
@@ -83,9 +86,13 @@
   border-bottom: 1px solid rgba(66, 165, 245, 0.2);
 }
 
-.logo-icon {
-  color: #42a5f5;
-  filter: drop-shadow(0 0 8px rgba(66, 165, 245, 0.4));
+.sidebar-logo {
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  filter: brightness(1.1);
+  display: block;
+  margin: 0 auto;
 }
 
 .main-separator {
