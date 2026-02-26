@@ -1,7 +1,7 @@
 <template>
   <q-page class="q-pa-md">
     <div class="row items-center q-mb-md">
-      <q-btn flat round dense icon="arrow_back" @click="$router.back()" class="q-mr-sm">
+      <q-btn flat round dense icon="arrow_back" @click="voltarSeguro" class="q-mr-sm">
         <q-tooltip>Voltar</q-tooltip>
       </q-btn>
       <div class="text-h6 text-weight-bold">Consulta de Clientes</div>
@@ -155,9 +155,15 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
+import { useRouter } from 'vue-router'
 import { clienteService } from 'src/services/clienteService'
 
 const $q = useQuasar()
+const router = useRouter()
+
+function voltarSeguro() {
+  router.push('/ordens')
+}
 
 const columns = [
   { name: 'nome', label: 'Nome', field: 'nome', align: 'left' },

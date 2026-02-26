@@ -1,7 +1,7 @@
 <template>
   <q-page class="q-pa-md">
     <div class="row items-center q-mb-md">
-      <q-btn flat round dense icon="arrow_back" @click="$router.back()" class="q-mr-sm" />
+      <q-btn flat round dense icon="arrow_back" @click="voltarSeguro" class="q-mr-sm" />
       <div class="text-h6 text-weight-bold">
         {{ isEdit ? 'Editar Ordem' : 'Nova Ordem de Serviço' }}
       </div>
@@ -158,7 +158,7 @@
       <div class="text-right text-h6 text-weight-bold">Total: R$ {{ total.toFixed(2) }}</div>
 
       <div class="q-mt-md text-right">
-        <q-btn label="Cancelar" flat color="grey" @click="$router.back()" class="q-mr-sm" />
+        <q-btn label="Cancelar" flat color="grey" @click="voltarSeguro" class="q-mr-sm" />
         <q-btn
           label="Salvar"
           color="primary"
@@ -180,6 +180,12 @@ import { clienteService } from 'src/services/clienteService'
 const route = useRoute()
 const router = useRouter()
 const $q = useQuasar()
+
+function voltarSeguro() {
+  if (window.history.length > 2) {
+    router.push('/ordens')
+  }
+}
 
 const clienteSelecionado = ref(null)
 const veiculoSelecionado = ref(null)

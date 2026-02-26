@@ -1,7 +1,7 @@
 <template>
   <q-page class="q-pa-md">
     <div class="row items-center q-mb-md">
-      <q-btn flat round dense icon="arrow_back" @click="$router.back()" class="q-mr-sm" />
+      <q-btn flat round dense icon="arrow_back" @click="voltarSeguro" class="q-mr-sm" />
       <div class="text-h6 text-weight-bold">
         {{ isEdit ? 'Editar Cliente' : 'Cadastro de Clientes' }}
       </div>
@@ -92,7 +92,7 @@
       />
 
       <div class="q-mt-md text-right">
-        <q-btn label="Cancelar" flat color="grey" @click="$router.back()" class="q-mr-sm" />
+        <q-btn label="Cancelar" flat color="grey" @click="voltarSeguro" class="q-mr-sm" />
         <q-btn label="Salvar" color="primary" @click="salvar" :loading="salvando" />
       </div>
     </q-card>
@@ -109,6 +109,10 @@ import { formatarPlaca } from 'src/utils/formatters'
 const router = useRouter()
 const route = useRoute()
 const $q = useQuasar()
+
+function voltarSeguro() {
+  router.push('/ordens')
+}
 
 const salvando = ref(false)
 const isEdit = computed(() => !!route.params.id)

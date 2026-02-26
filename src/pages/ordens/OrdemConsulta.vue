@@ -1,7 +1,6 @@
 <template>
   <q-page class="q-pa-md">
     <div class="row items-center q-mb-md">
-      <q-btn flat round dense icon="arrow_back" @click="$router.back()" class="q-mr-sm" />
       <div class="text-h6 text-weight-bold">Ordens de Serviço</div>
       <q-space />
       <q-btn label="Nova Ordem" color="primary" icon="add" to="/ordens/nova" class="btn-custom" />
@@ -218,5 +217,9 @@ onMounted(() => {
 
 .id-link:hover {
   text-decoration: underline;
+}
+
+body.body--dark .id-link {
+  color: white;
 }
 </style>

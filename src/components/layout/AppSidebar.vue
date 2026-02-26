@@ -49,16 +49,35 @@
         </q-item>
       </q-expansion-item>
 
-      <!-- <q-separator class="category-separator" /> -->
+      <template v-if="isAdmin">
+        <q-separator class="category-separator" />
 
-      <!-- <q-item clickable v-ripple to="/configuracoes" active-class="item-active" class="menu-item">
-        <q-item-section avatar>
-          <q-icon name="settings" size="22px" />
-        </q-item-section>
-        <q-item-section>
-          <q-item-label>Configurações</q-item-label>
-        </q-item-section>
-      </q-item> -->
+        <q-expansion-item
+          icon="admin_panel_settings"
+          label="Usuários"
+          expand-separator
+          class="expansion-item"
+          header-class="expansion-header"
+        >
+          <q-item clickable to="/usuarios/cadastro" active-class="item-active" class="submenu-item">
+            <q-item-section avatar>
+              <q-icon name="person_add" size="18px" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Cadastro</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <q-item clickable to="/usuarios/consulta" active-class="item-active" class="submenu-item">
+            <q-item-section avatar>
+              <q-icon name="manage_accounts" size="18px" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Gerenciar</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-expansion-item>
+      </template>
     </q-list>
 
     <div class="sidebar-footer">
@@ -70,6 +89,17 @@
     </div>
   </q-drawer>
 </template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+
+const isAdmin = ref(false)
+
+onMounted(() => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  isAdmin.value = user.role === 'admin'
+})
+</script>
 
 <style scoped>
 .sidebar {

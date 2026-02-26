@@ -24,6 +24,14 @@ const routes = [
         component: () => import('pages/clientes/ClientesConsulta.vue'),
       },
       {
+        path: '/usuarios/cadastro/:id?',
+        component: () => import('pages/usuarios/UsuariosCadastro.vue'),
+      },
+      {
+        path: '/usuarios/consulta',
+        component: () => import('pages/usuarios/UsuariosConsulta.vue'),
+      },
+      {
         path: '/configuracoes',
         component: () => import('pages/ConfiguracoesPage.vue'),
       },

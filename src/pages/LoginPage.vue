@@ -32,7 +32,7 @@
           <q-input
             v-model="password"
             label="Senha"
-            type="password"
+            :type="isPwd ? 'password' : 'text'"
             outlined
             dense
             class="input-field"
@@ -41,6 +41,13 @@
           >
             <template v-slot:prepend>
               <q-icon name="lock" color="blue-7" />
+            </template>
+            <template v-slot:append>
+              <q-icon
+                :name="isPwd ? 'visibility_off' : 'visibility'"
+                class="cursor-pointer"
+                @click="isPwd = !isPwd"
+              />
             </template>
           </q-input>
 
@@ -72,11 +79,12 @@ import { useRouter } from 'vue-router'
 const username = ref('')
 const password = ref('')
 const error = ref(false)
+const isPwd = ref(true)
 const router = useRouter()
 
 function login() {
-  if (username.value === 'Admin' && password.value === '1234') {
-    localStorage.setItem('user', JSON.stringify({ name: 'Admin' }))
+  if ((username.value === 'Admin' || username.value === 'user') && password.value === '1234') {
+    localStorage.setItem('user', JSON.stringify({ name: username.value, role: username.value === 'Admin' ? 'admin' : 'user' }))
     router.push('/ordens')
   } else {
     error.value = true

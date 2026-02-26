@@ -9,11 +9,7 @@
       <q-btn flat round :icon="$q.dark.isActive ? 'dark_mode' : 'light_mode'" @click="toggleDark" />
 
       <!-- Perfil -->
-      <q-btn flat round>
-        <q-avatar size="32px">
-          <img src="https://cdn.quasar.dev/img/avatar.png" />
-        </q-avatar>
-
+      <q-btn flat round icon="account_circle">
         <q-menu>
           <q-list style="min-width: 150px">
             <q-item clickable v-close-popup>
@@ -33,7 +29,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 
@@ -45,11 +41,20 @@ const headerClass = computed(() => {
 })
 
 function toggleDark() {
-  $q.dark.set(!$q.dark.isActive)
+  const newValue = !$q.dark.isActive
+  $q.dark.set(newValue)
+  localStorage.setItem('darkMode', newValue)
 }
 
 function logout() {
   localStorage.removeItem('user')
   router.push('/login')
 }
+
+onMounted(() => {
+  const savedDarkMode = localStorage.getItem('darkMode')
+  if (savedDarkMode !== null) {
+    $q.dark.set(savedDarkMode === 'true')
+  }
+})
 </script>
