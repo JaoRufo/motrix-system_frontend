@@ -10,7 +10,11 @@
     <q-card class="q-pa-md shadow-2" bordered>
       <div class="row q-col-gutter-md">
         <div class="col-12 col-md-6">
-          <q-input v-model="form.nome" label="Nome *" outlined dense />
+          <q-input v-model="form.name" label="Nome *" outlined dense />
+        </div>
+
+        <div class="col-12 col-md-6">
+          <q-input v-model="form.username" label="Usuário *" outlined dense />
         </div>
 
         <div class="col-12 col-md-6">
@@ -19,7 +23,7 @@
 
         <div class="col-12 col-md-6">
           <q-input
-            v-model="form.senha"
+            v-model="form.password"
             :label="isEdit ? 'Nova Senha (deixe em branco para manter)' : 'Senha *'"
             outlined
             dense
@@ -46,12 +50,10 @@
         </div>
 
         <div class="col-12 col-md-6">
-          <q-select
-            v-model="form.status"
-            :options="statusOptions"
-            label="Status *"
-            outlined
-            dense
+          <q-toggle
+            v-model="form.is_active"
+            label="Usuário Ativo"
+            color="primary"
           />
         </div>
       </div>
@@ -68,6 +70,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
+import { usuarioService } from '../../services/usuarioService'
 
 const router = useRouter()
 const route = useRoute()
@@ -77,91 +80,78 @@ const salvando = ref(false)
 const isEdit = computed(() => !!route.params.id)
 const isPwd = ref(true)
 
-const roleOptions = [
-  { label: 'Usuário', value: 'user' },
-  { label: 'Administrador', value: 'admin' },
-]
-
-const statusOptions = [
-  { label: 'Ativo', value: 'ativo' },
-  { label: 'Inativo', value: 'inativo' },
-]
+const roleOptions = ['user', 'admin']
 
 const form = ref({
-  nome: '',
+  name: '',
   username: '',
   email: '',
-  senha: '',
-  role: { label: 'Usuário', value: 'user' },
-  status: { label: 'Ativo', value: 'ativo' },
+  password: '',
+  role: 'user',
+  is_active: true
 })
 
 function voltarSeguro() {
   router.push('/usuarios/consulta')
 }
 
-function salvar() {
-  if (!form.value.nome || !form.value.username || !form.value.email) {
-    $q.notify({ type: 'negative', message: 'Preencha os campos obrigatórios' })
+async function salvar() {
+  if (!form.value.name || !form.value.username || !form.value.email || !form.value.role) {
+    $q.notify({ type: 'negative', message: 'Preencha todos os campos obrigatórios' })
     return
   }
 
-  if (!isEdit.value && !form.value.senha) {
+  if (!isEdit.value && !form.value.password) {
     $q.notify({ type: 'negative', message: 'Informe a senha' })
     return
   }
 
   salvando.value = true
 
-  setTimeout(() => {
-    try {
-      const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]')
-
-      const usuarioData = {
-        nome: form.value.nome,
-        username: form.value.username,
-        email: form.value.email,
-        role: form.value.role.value,
-        status: form.value.status.value,
-      }
-
-      if (isEdit.value) {
-        const index = usuarios.findIndex((u) => u.id == route.params.id)
-        if (form.value.senha) {
-          usuarioData.senha = form.value.senha
-        } else {
-          usuarioData.senha = usuarios[index].senha
-        }
-        usuarios[index] = { ...usuarios[index], ...usuarioData }
-        $q.notify({ type: 'positive', message: 'Usuário atualizado com sucesso!' })
-      } else {
-        usuarioData.senha = form.value.senha
-        usuarios.push({ id: Date.now(), ...usuarioData })
-        $q.notify({ type: 'positive', message: 'Usuário cadastrado com sucesso!' })
-      }
-
-      localStorage.setItem('usuarios', JSON.stringify(usuarios))
-      router.push('/usuarios/consulta')
-    } catch {
-      $q.notify({ type: 'negative', message: 'Erro ao salvar usuário' })
-      salvando.value = false
+  try {
+    const payload = {
+      name: form.value.name,
+      username: form.value.username,
+      email: form.value.email,
+      role: form.value.role,
+      is_active: form.value.is_active
     }
-  }, 300)
+
+    if (form.value.password) {
+      payload.password = form.value.password
+    }
+
+    if (isEdit.value) {
+      await usuarioService.atualizar(route.params.id, payload)
+      $q.notify({ type: 'positive', message: 'Usuário atualizado com sucesso!' })
+    } else {
+      await usuarioService.criar(payload)
+      $q.notify({ type: 'positive', message: 'Usuário cadastrado com sucesso!' })
+    }
+
+    router.push('/usuarios/consulta')
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error.message || 'Erro ao salvar usuário' })
+  } finally {
+    salvando.value = false
+  }
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (isEdit.value) {
-    const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]')
-    const usuario = usuarios.find((u) => u.id == route.params.id)
-    if (usuario) {
+    try {
+      const usuario = await usuarioService.buscarPorId(route.params.id)
       form.value = {
-        nome: usuario.nome,
+        name: usuario.name,
         username: usuario.username,
         email: usuario.email,
-        senha: '',
-        role: roleOptions.find((r) => r.value === usuario.role) || roleOptions[0],
-        status: statusOptions.find((s) => s.value === usuario.status) || statusOptions[0],
+        password: '',
+        role: usuario.role,
+        is_active: usuario.is_active
       }
+    } catch {
+      $q.notify({ type: 'negative', message: 'Erro ao carregar usuário' })
+      router.push('/usuarios/consulta')
     }
   }
 })

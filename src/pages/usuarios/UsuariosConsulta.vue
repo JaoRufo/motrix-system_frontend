@@ -16,7 +16,7 @@
     </div>
 
     <q-card flat bordered>
-      <q-table :rows="usuarios" :columns="columns" row-key="id" flat>
+      <q-table :rows="usuarios" :columns="columns" row-key="id" flat :loading="loading">
         <template v-slot:body-cell-role="props">
           <q-td>
             <q-badge :color="props.row.role === 'admin' ? 'purple' : 'blue'">
@@ -25,10 +25,10 @@
           </q-td>
         </template>
 
-        <template v-slot:body-cell-status="props">
+        <template v-slot:body-cell-is_active="props">
           <q-td>
-            <q-badge :color="props.row.status === 'ativo' ? 'green' : 'grey'">
-              {{ props.row.status === 'ativo' ? 'Ativo' : 'Inativo' }}
+            <q-badge :color="props.row.is_active ? 'green' : 'grey'">
+              {{ props.row.is_active ? 'Ativo' : 'Inativo' }}
             </q-badge>
           </q-td>
         </template>
@@ -58,27 +58,36 @@
 import { ref, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
+import { usuarioService } from '../../services/usuarioService'
 
 const $q = useQuasar()
 const router = useRouter()
+const loading = ref(false)
 
 function voltarSeguro() {
   router.push('/ordens')
 }
 
 const columns = [
-  { name: 'nome', label: 'Nome', field: 'nome', align: 'left' },
+  { name: 'name', label: 'Nome', field: 'name', align: 'left' },
   { name: 'username', label: 'Usuário', field: 'username', align: 'left' },
   { name: 'email', label: 'E-mail', field: 'email', align: 'left' },
   { name: 'role', label: 'Tipo', field: 'role', align: 'left' },
-  { name: 'status', label: 'Status', field: 'status', align: 'left' },
+  { name: 'is_active', label: 'Status', field: 'is_active', align: 'left' },
   { name: 'acoes', label: 'Ações', align: 'center' },
 ]
 
 const usuarios = ref([])
 
-function carregar() {
-  usuarios.value = JSON.parse(localStorage.getItem('usuarios') || '[]')
+async function carregar() {
+  loading.value = true
+  try {
+    usuarios.value = await usuarioService.listar()
+  } catch {
+    $q.notify({ type: 'negative', message: 'Erro ao carregar usuários' })
+  } finally {
+    loading.value = false
+  }
 }
 
 function excluir(id) {
@@ -87,12 +96,14 @@ function excluir(id) {
     message: 'Deseja realmente excluir este usuário?',
     cancel: { label: 'Cancelar', flat: true },
     ok: { label: 'Excluir', color: 'negative' },
-  }).onOk(() => {
-    const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]')
-    const novosUsuarios = usuarios.filter((u) => u.id != id)
-    localStorage.setItem('usuarios', JSON.stringify(novosUsuarios))
-    carregar()
-    $q.notify({ type: 'positive', message: 'Usuário excluído com sucesso!' })
+  }).onOk(async () => {
+    try {
+      await usuarioService.excluir(id)
+      $q.notify({ type: 'positive', message: 'Usuário excluído com sucesso!' })
+      carregar()
+    } catch {
+      $q.notify({ type: 'negative', message: 'Erro ao excluir usuário' })
+    }
   })
 }
 

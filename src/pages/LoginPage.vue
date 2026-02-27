@@ -23,6 +23,7 @@
             dense
             class="input-field"
             :error="error"
+            @input="error = false"
           >
             <template v-slot:prepend>
               <q-icon name="person" color="blue-7" />
@@ -37,6 +38,7 @@
             dense
             class="input-field"
             :error="error"
+            @input="error = false"
             @keyup.enter="login"
           >
             <template v-slot:prepend>
@@ -53,7 +55,7 @@
 
           <div v-if="error" class="error-message">
             <q-icon name="error" size="18px" />
-            Usuário ou senha inválidos
+            {{ errorMessage }}
           </div>
 
           <q-btn
@@ -61,6 +63,8 @@
             color="primary"
             class="login-btn"
             @click="login"
+            :loading="loading"
+            :disable="loading"
             unelevated
             size="lg"
           />
@@ -75,22 +79,52 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { authService } from '../services/authService'
+import { Notify } from 'quasar'
 
 const username = ref('')
 const password = ref('')
 const error = ref(false)
+const errorMessage = ref('')
 const isPwd = ref(true)
+const loading = ref(false)
 const router = useRouter()
 
-function login() {
-  if ((username.value === 'Admin' || username.value === 'user') && password.value === '1234') {
-    localStorage.setItem('user', JSON.stringify({ name: username.value, role: username.value === 'Admin' ? 'admin' : 'user' }))
-    router.push('/ordens')
-  } else {
+async function login() {
+  if (!username.value || !password.value) {
     error.value = true
-    setTimeout(() => {
-      error.value = false
-    }, 3000)
+    errorMessage.value = 'Preencha usuário e senha'
+    return
+  }
+
+  loading.value = true
+  error.value = false
+  errorMessage.value = ''
+
+  try {
+    await authService.login(username.value, password.value)
+
+    Notify.create({
+      type: 'positive',
+      message: 'Login realizado com sucesso!',
+      position: 'top',
+      timeout: 2000,
+    })
+
+    router.push('/ordens')
+  } catch {
+    error.value = true
+    errorMessage.value = 'Usuário ou senha inválidos'
+
+    Notify.create({
+      type: 'negative',
+      message: 'Usuário ou senha inválidos',
+      position: 'top',
+      timeout: 5000,
+      icon: 'error',
+    })
+  } finally {
+    loading.value = false
   }
 }
 </script>
@@ -240,13 +274,28 @@ function login() {
 .error-message {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   color: #dc3545;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 500;
   margin-bottom: 20px;
-  padding: 10px;
-  background: rgba(220, 53, 69, 0.1);
+  padding: 14px 16px;
+  background: rgba(220, 53, 69, 0.12);
   border-radius: 8px;
+  border-left: 4px solid #dc3545;
+  animation: slideIn 0.3s ease;
+  min-height: 48px;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .login-btn {

@@ -32,6 +32,7 @@
 import { computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
+import { authService } from '../../services/authService'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -47,7 +48,7 @@ function toggleDark() {
 }
 
 function logout() {
-  localStorage.removeItem('user')
+  authService.logout()
   router.push('/login')
 }
 

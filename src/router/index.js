@@ -1,6 +1,7 @@
 import { route } from 'quasar/wrappers'
 import { createRouter, createWebHistory } from 'vue-router'
 import routes from './routes'
+import { authService } from '../services/authService'
 
 export default route(function () {
   const Router = createRouter({
@@ -9,10 +10,12 @@ export default route(function () {
   })
 
   Router.beforeEach((to, from, next) => {
-    const user = localStorage.getItem('user')
+    const isAuthenticated = authService.isAuthenticated()
 
-    if (!user && to.path !== '/login') {
+    if (!isAuthenticated && to.path !== '/login') {
       next('/login')
+    } else if (isAuthenticated && to.path === '/login') {
+      next('/ordens')
     } else {
       next()
     }

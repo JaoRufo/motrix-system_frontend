@@ -65,6 +65,14 @@
         </div>
 
         <div class="col-12 col-md-3">
+          <q-input v-model="veiculo.chassi" label="Chassi" outlined dense />
+        </div>
+
+        <div class="col-12 col-md-2">
+          <q-input v-model="veiculo.cor" label="Cor" outlined dense />
+        </div>
+
+        <div class="col-12 col-md-2">
           <q-input v-model.number="veiculo.kmAtual" label="KM Atual" outlined dense type="number" />
         </div>
 
@@ -128,6 +136,8 @@ const form = ref({
       placa: '',
       modelo: '',
       ano: '',
+      chassi: '',
+      cor: '',
       kmAtual: 0,
     },
   ],
@@ -138,6 +148,8 @@ function adicionarVeiculo() {
     placa: '',
     modelo: '',
     ano: '',
+    chassi: '',
+    cor: '',
     kmAtual: 0,
   })
 }
@@ -146,42 +158,83 @@ function removerVeiculo(index) {
   form.value.veiculos.splice(index, 1)
 }
 
-function salvar() {
+async function salvar() {
   if (!form.value.nome || !form.value.telefone) {
     $q.notify({ type: 'negative', message: 'Preencha os campos obrigatórios' })
     return
   }
 
-  const veiculoValido = form.value.veiculos.some((v) => v.placa && v.modelo)
-  if (!veiculoValido) {
+  const veiculosValidos = form.value.veiculos.filter((v) => v.placa && v.modelo)
+  if (veiculosValidos.length === 0) {
     $q.notify({ type: 'negative', message: 'Adicione pelo menos um veículo com placa e modelo' })
     return
   }
 
   salvando.value = true
 
-  setTimeout(() => {
-    try {
-      if (isEdit.value) {
-        clienteService.atualizar(route.params.id, form.value)
-        $q.notify({ type: 'positive', message: 'Cliente atualizado com sucesso!' })
-      } else {
-        clienteService.salvar(form.value)
-        $q.notify({ type: 'positive', message: 'Cliente cadastrado com sucesso!' })
-      }
-      router.push('/clientes/consulta')
-    } catch {
-      $q.notify({ type: 'negative', message: 'Erro ao salvar cliente' })
-      salvando.value = false
+  try {
+    const payload = {
+      cliente: {
+        nome: form.value.nome,
+        cpf: form.value.cpf,
+        telefone: form.value.telefone,
+        email: form.value.email,
+        endereco: form.value.endereco
+      },
+      veiculos: veiculosValidos.map(v => ({
+        placa: v.placa,
+        modelo: v.modelo,
+        ano: v.ano,
+        chassi: v.chassi || '',
+        cor: v.cor || '',
+        km_atual: v.kmAtual || 0
+      }))
     }
-  }, 300)
+
+    if (isEdit.value) {
+      await clienteService.atualizar(route.params.id, payload.cliente)
+      $q.notify({ type: 'positive', message: 'Cliente atualizado com sucesso!' })
+    } else {
+      await clienteService.criar(payload)
+      $q.notify({ type: 'positive', message: 'Cliente cadastrado com sucesso!' })
+    }
+    router.push('/clientes/consulta')
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error.message || 'Erro ao salvar cliente' })
+  } finally {
+    salvando.value = false
+  }
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (isEdit.value) {
-    const cliente = clienteService.buscarPorId(route.params.id)
-    if (cliente) {
-      form.value = { ...cliente }
+    try {
+      const cliente = await clienteService.buscarPorId(route.params.id)
+      if (cliente) {
+        form.value = {
+          nome: cliente.nome,
+          cpf: cliente.cpf,
+          telefone: cliente.telefone,
+          email: cliente.email,
+          endereco: cliente.endereco,
+          veiculos: cliente.veiculos?.map(v => ({
+            placa: v.placa,
+            modelo: v.modelo,
+            ano: v.ano,
+            chassi: v.chassi,
+            cor: v.cor,
+            kmAtual: v.km_atual
+          })) || [{
+            placa: '',
+            modelo: '',
+            ano: '',
+            kmAtual: 0
+          }]
+        }
+      }
+    } catch {
+      $q.notify({ type: 'negative', message: 'Erro ao carregar cliente' })
+      router.push('/clientes/consulta')
     }
   }
 })

@@ -16,7 +16,7 @@
     </div>
 
     <q-card flat bordered>
-      <q-table :rows="clientes" :columns="columns" row-key="id" flat>
+      <q-table :rows="clientes" :columns="columns" row-key="id" flat :loading="loading">
         <template v-slot:body-cell-veiculos="props">
           <q-td>
             <div v-for="(veiculo, idx) in props.row.veiculos" :key="idx">
@@ -177,6 +177,7 @@ const clientes = ref([])
 const dialogHistorico = ref(false)
 const clienteSelecionado = ref(null)
 const historicoOrdens = ref([])
+const loading = ref(false)
 
 const statusColors = {
   Aberta: 'blue',
@@ -190,17 +191,25 @@ function getStatusColor(status) {
   return statusColors[status] || 'grey'
 }
 
-function carregar() {
-  clientes.value = clienteService.listar()
+async function carregar() {
+  loading.value = true
+  try {
+    clientes.value = await clienteService.listar()
+  } catch {
+    $q.notify({ type: 'negative', message: 'Erro ao carregar clientes' })
+  } finally {
+    loading.value = false
+  }
 }
 
-function verHistorico(cliente) {
+async function verHistorico(cliente) {
   clienteSelecionado.value = cliente
-  const ordens = JSON.parse(localStorage.getItem('ordens') || '[]')
-  historicoOrdens.value = ordens
-    .filter((o) => o.clienteId == cliente.id)
-    .sort((a, b) => b.data - a.data)
-  dialogHistorico.value = true
+  try {
+    historicoOrdens.value = await clienteService.buscarHistorico(cliente.id)
+    dialogHistorico.value = true
+  } catch {
+    $q.notify({ type: 'negative', message: 'Erro ao carregar histórico' })
+  }
 }
 
 function excluir(id) {
@@ -209,10 +218,14 @@ function excluir(id) {
     message: 'Deseja realmente excluir este cliente?',
     cancel: { label: 'Cancelar', flat: true },
     ok: { label: 'Excluir', color: 'negative' },
-  }).onOk(() => {
-    clienteService.excluir(id)
-    carregar()
-    $q.notify({ type: 'positive', message: 'Cliente excluído com sucesso!' })
+  }).onOk(async () => {
+    try {
+      await clienteService.excluir(id)
+      $q.notify({ type: 'positive', message: 'Cliente excluído com sucesso!' })
+      carregar()
+    } catch {
+      $q.notify({ type: 'negative', message: 'Erro ao excluir cliente' })
+    }
   })
 }
 

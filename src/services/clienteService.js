@@ -1,33 +1,35 @@
+import { http } from '../utils/http'
+
 export const clienteService = {
-  listar() {
-    return JSON.parse(localStorage.getItem('clientes') || '[]')
+  async listar() {
+    return await http.get('/clientes')
   },
 
-  salvar(cliente) {
-    const clientes = this.listar()
-    clientes.push({ ...cliente, id: Date.now() })
-    localStorage.setItem('clientes', JSON.stringify(clientes))
-    return true
+  async buscarPorId(id) {
+    return await http.get(`/clientes/${id}`)
   },
 
-  atualizar(id, cliente) {
-    const clientes = this.listar()
-    const index = clientes.findIndex((c) => c.id == id)
-    if (index !== -1) {
-      clientes[index] = { ...cliente, id: parseInt(id) }
-      localStorage.setItem('clientes', JSON.stringify(clientes))
-      return true
+  async criar(clienteData) {
+    const payload = {
+      cliente: clienteData.cliente,
+      veiculos: clienteData.veiculos?.map(v => ({
+        ...v,
+        placa: v.placa?.toUpperCase(),
+        chassi: v.chassi?.toUpperCase()
+      })) || []
     }
-    return false
+    return await http.post('/clientes', payload)
   },
 
-  buscarPorId(id) {
-    return this.listar().find((c) => c.id == id)
+  async atualizar(id, cliente) {
+    return await http.put(`/clientes/${id}`, cliente)
   },
 
-  excluir(id) {
-    const clientes = this.listar().filter((c) => c.id != id)
-    localStorage.setItem('clientes', JSON.stringify(clientes))
-    return true
+  async excluir(id) {
+    return await http.delete(`/clientes/${id}`)
   },
+
+  async buscarHistorico(id) {
+    return await http.get(`/clientes/${id}/historico`)
+  }
 }

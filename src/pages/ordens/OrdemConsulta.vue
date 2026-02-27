@@ -7,7 +7,7 @@
     </div>
 
     <q-card flat bordered>
-      <q-table :rows="ordens" :columns="columns" row-key="id" flat>
+      <q-table :rows="ordens" :columns="columns" row-key="id" flat :loading="loading">
         <template v-slot:body-cell-id="props">
           <q-td>
             <span @click="verDetalhes(props.row)" class="id-link">
@@ -135,6 +135,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
+import { ordemService } from '../../services/ordemService'
 
 const $q = useQuasar()
 
@@ -157,6 +158,7 @@ const columns = [
 const ordens = ref([])
 const dialogDetalhes = ref(false)
 const ordemSelecionada = ref(null)
+const loading = ref(false)
 
 const statusColors = {
   Aberta: 'blue',
@@ -170,8 +172,16 @@ function getStatusColor(status) {
   return statusColors[status] || 'grey'
 }
 
-function carregar() {
-  ordens.value = JSON.parse(localStorage.getItem('ordens') || '[]')
+async function carregar() {
+  loading.value = true
+  try {
+    const data = await ordemService.listar()
+    ordens.value = data
+  } catch {
+    $q.notify({ type: 'negative', message: 'Erro ao carregar ordens' })
+  } finally {
+    loading.value = false
+  }
 }
 
 function verDetalhes(ordem) {
@@ -185,12 +195,14 @@ function excluir(id) {
     message: 'Deseja realmente excluir esta ordem de serviço?',
     cancel: { label: 'Cancelar', flat: true },
     ok: { label: 'Excluir', color: 'negative' },
-  }).onOk(() => {
-    const ordens = JSON.parse(localStorage.getItem('ordens') || '[]')
-    const novasOrdens = ordens.filter((o) => o.id != id)
-    localStorage.setItem('ordens', JSON.stringify(novasOrdens))
-    carregar()
-    $q.notify({ type: 'positive', message: 'Ordem excluída com sucesso!' })
+  }).onOk(async () => {
+    try {
+      await ordemService.excluir(id)
+      $q.notify({ type: 'positive', message: 'Ordem excluída com sucesso!' })
+      carregar()
+    } catch {
+      $q.notify({ type: 'negative', message: 'Erro ao excluir ordem' })
+    }
   })
 }
 
