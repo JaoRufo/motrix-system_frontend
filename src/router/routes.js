@@ -35,6 +35,10 @@ const routes = [
         path: '/configuracoes',
         component: () => import('pages/ConfiguracoesPage.vue'),
       },
+      {
+        path: '/configuracoes/oficina',
+        component: () => import('pages/ConfiguracoesOficina.vue'),
+      },
     ],
   },
   {

@@ -112,13 +112,13 @@ async function login() {
     })
 
     router.push('/ordens')
-  } catch {
+  } catch (err) {
     error.value = true
-    errorMessage.value = 'Usuário ou senha inválidos'
+    errorMessage.value = err.message || 'Usuário ou senha inválidos'
 
     Notify.create({
       type: 'negative',
-      message: 'Usuário ou senha inválidos',
+      message: err.message || 'Usuário ou senha inválidos',
       position: 'top',
       timeout: 5000,
       icon: 'error',

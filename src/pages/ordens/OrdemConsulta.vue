@@ -7,7 +7,34 @@
     </div>
 
     <q-card flat bordered>
-      <q-table :rows="ordens" :columns="columns" row-key="id" flat :loading="loading">
+      <q-card-section>
+        <div class="row q-col-gutter-md q-mb-md">
+          <div class="col-12 col-md-3">
+            <q-input v-model="filtro.cliente" label="Cliente" outlined dense clearable />
+          </div>
+          <div class="col-12 col-md-2">
+            <q-input v-model="filtro.placa" label="Placa" outlined dense clearable />
+          </div>
+          <div class="col-12 col-md-2">
+            <q-input v-model="filtro.id" label="Nº O.S" outlined dense clearable type="number" />
+          </div>
+          <div class="col-12 col-md-2">
+            <q-select
+              v-model="filtro.status"
+              :options="statusOptions"
+              label="Status"
+              outlined
+              dense
+              clearable
+            />
+          </div>
+          <div class="col-12 col-md-3 flex items-center">
+            <q-btn label="Limpar Filtros" flat color="grey" @click="limparFiltros" />
+          </div>
+        </div>
+      </q-card-section>
+
+      <q-table :rows="ordensFiltradas" :columns="columns" row-key="id" flat :loading="loading">
         <template v-slot:body-cell-id="props">
           <q-td>
             <span @click="verDetalhes(props.row)" class="id-link">
@@ -27,8 +54,11 @@
             <q-btn icon="visibility" flat round color="info" @click="verDetalhes(props.row)">
               <q-tooltip>Visualizar Detalhes</q-tooltip>
             </q-btn>
-            <q-btn icon="edit" flat round color="primary" :to="`/ordens/nova/${props.row.id}`">
+            <q-btn icon="edit" flat round color="primary" @click="editarOrdem(props.row.id)">
               <q-tooltip>Editar</q-tooltip>
+            </q-btn>
+            <q-btn icon="picture_as_pdf" flat round color="red" @click="baixarPDF(props.row.id)">
+              <q-tooltip>Baixar PDF</q-tooltip>
             </q-btn>
             <q-btn icon="delete" flat round color="negative" @click.stop="excluir(props.row.id)">
               <q-tooltip>Excluir</q-tooltip>
@@ -44,6 +74,15 @@
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">Ordem de Serviço #{{ ordemSelecionada.id }}</div>
           <q-space />
+          <q-btn
+            icon="picture_as_pdf"
+            flat
+            round
+            color="red"
+            @click="baixarPDF(ordemSelecionada.id)"
+          >
+            <q-tooltip>Baixar PDF</q-tooltip>
+          </q-btn>
           <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
 
@@ -57,6 +96,11 @@
             <div class="col-12 col-md-6">
               <div class="text-subtitle2 text-grey">Veículo</div>
               <div class="text-body1">{{ ordemSelecionada.veiculo }}</div>
+            </div>
+
+            <div v-if="ordemSelecionada.oficina" class="col-12 col-md-6">
+              <div class="text-subtitle2 text-grey">Oficina</div>
+              <div class="text-body1">{{ ordemSelecionada.oficina.nome }}</div>
             </div>
 
             <div class="col-12 col-md-4">
@@ -75,7 +119,7 @@
             <div class="col-12 col-md-4">
               <div class="text-subtitle2 text-grey">Data</div>
               <div class="text-body1">
-                {{ new Date(ordemSelecionada.data).toLocaleDateString() }}
+                {{ new Date(ordemSelecionada.data).toLocaleString('pt-BR') }}
               </div>
             </div>
 
@@ -133,11 +177,55 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useQuasar } from 'quasar'
+import { useRouter } from 'vue-router'
 import { ordemService } from '../../services/ordemService'
 
 const $q = useQuasar()
+const router = useRouter()
+
+const filtro = ref({
+  cliente: '',
+  placa: '',
+  id: '',
+  status: '',
+})
+
+const statusOptions = ['Aberta', 'Em Andamento', 'Aguardando Orçamento', 'Finalizada', 'Cancelada']
+
+function limparFiltros() {
+  filtro.value = {
+    cliente: '',
+    placa: '',
+    id: '',
+    status: '',
+  }
+}
+
+const ordensFiltradas = computed(() => {
+  let resultado = ordens.value
+
+  if (filtro.value.cliente) {
+    const needle = filtro.value.cliente.toLowerCase()
+    resultado = resultado.filter((o) => o.cliente?.toLowerCase().includes(needle))
+  }
+
+  if (filtro.value.placa) {
+    const needle = filtro.value.placa.toLowerCase()
+    resultado = resultado.filter((o) => o.veiculoPlaca?.toLowerCase().includes(needle))
+  }
+
+  if (filtro.value.id) {
+    resultado = resultado.filter((o) => o.id.toString().includes(filtro.value.id))
+  }
+
+  if (filtro.value.status) {
+    resultado = resultado.filter((o) => o.status === filtro.value.status)
+  }
+
+  return resultado
+})
 
 const columns = [
   { name: 'id', label: 'ID', field: 'id', align: 'left' },
@@ -150,7 +238,7 @@ const columns = [
     label: 'Total (R$)',
     field: 'total',
     align: 'left',
-    format: (val) => val?.toFixed(2),
+    format: (val) => (typeof val === 'number' ? val.toFixed(2) : '0.00'),
   },
   { name: 'acoes', label: 'Ações', field: 'acoes', align: 'center' },
 ]
@@ -176,7 +264,26 @@ async function carregar() {
   loading.value = true
   try {
     const data = await ordemService.listar()
-    ordens.value = data
+    ordens.value = data.map((ordem) => ({
+      id: ordem.id,
+      cliente: ordem.cliente?.nome || ordem.cliente_nome || 'N/A',
+      clienteId: ordem.cliente_id,
+      veiculo: ordem.veiculo
+        ? `${ordem.veiculo.modelo} - ${ordem.veiculo.placa}`
+        : ordem.veiculo_placa || 'N/A',
+      veiculoId: ordem.veiculo_id,
+      veiculoPlaca: ordem.veiculo_placa,
+      kmAtual: ordem.km_atual,
+      status: ordem.status,
+      descricaoProblema: ordem.descricao_problema,
+      observacoes: ordem.observacoes,
+      motivoCancelamento: ordem.motivo_cancelamento,
+      data: ordem.created_at || ordem.data,
+      total: parseFloat(ordem.total) || 0,
+      pecas: ordem.pecas || [],
+      maoObra: ordem.maoObra || ordem.mao_obra || [],
+      oficina: ordem.oficina || null,
+    }))
   } catch {
     $q.notify({ type: 'negative', message: 'Erro ao carregar ordens' })
   } finally {
@@ -187,6 +294,19 @@ async function carregar() {
 function verDetalhes(ordem) {
   ordemSelecionada.value = ordem
   dialogDetalhes.value = true
+}
+
+function editarOrdem(id) {
+  router.push(`/ordens/nova/${id}`)
+}
+
+async function baixarPDF(id) {
+  try {
+    await ordemService.baixarPDF(id)
+    $q.notify({ type: 'positive', message: 'PDF baixado com sucesso!' })
+  } catch {
+    $q.notify({ type: 'negative', message: 'Erro ao baixar PDF' })
+  }
 }
 
 function excluir(id) {

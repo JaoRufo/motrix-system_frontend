@@ -12,12 +12,6 @@
       <q-btn flat round icon="account_circle">
         <q-menu>
           <q-list style="min-width: 150px">
-            <q-item clickable v-close-popup>
-              <q-item-section> Meu Perfil </q-item-section>
-            </q-item>
-
-            <q-separator />
-
             <q-item clickable v-close-popup @click="logout">
               <q-item-section class="text-negative"> Sair </q-item-section>
             </q-item>

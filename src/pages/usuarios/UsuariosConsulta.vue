@@ -16,7 +16,27 @@
     </div>
 
     <q-card flat bordered>
-      <q-table :rows="usuarios" :columns="columns" row-key="id" flat :loading="loading">
+      <q-card-section>
+        <div class="row q-col-gutter-md q-mb-md">
+          <div class="col-12 col-md-3">
+            <q-input v-model="filtro.nome" label="Nome" outlined dense clearable />
+          </div>
+          <div class="col-12 col-md-3">
+            <q-input v-model="filtro.email" label="E-mail" outlined dense clearable />
+          </div>
+          <div class="col-12 col-md-2">
+            <q-input v-model="filtro.username" label="Usuário" outlined dense clearable />
+          </div>
+          <div class="col-12 col-md-2">
+            <q-select v-model="filtro.status" :options="['Ativo', 'Inativo']" label="Status" outlined dense clearable />
+          </div>
+          <div class="col-12 col-md-2 flex items-center">
+            <q-btn label="Limpar" flat color="grey" @click="limparFiltros" />
+          </div>
+        </div>
+      </q-card-section>
+
+      <q-table :rows="usuariosFiltrados" :columns="columns" row-key="id" flat :loading="loading">
         <template v-slot:body-cell-role="props">
           <q-td>
             <q-badge :color="props.row.role === 'admin' ? 'purple' : 'blue'">
@@ -55,7 +75,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { usuarioService } from '../../services/usuarioService'
@@ -63,6 +83,48 @@ import { usuarioService } from '../../services/usuarioService'
 const $q = useQuasar()
 const router = useRouter()
 const loading = ref(false)
+
+const filtro = ref({
+  nome: '',
+  email: '',
+  username: '',
+  status: ''
+})
+
+function limparFiltros() {
+  filtro.value = {
+    nome: '',
+    email: '',
+    username: '',
+    status: ''
+  }
+}
+
+const usuariosFiltrados = computed(() => {
+  let resultado = usuarios.value
+  
+  if (filtro.value.nome) {
+    const needle = filtro.value.nome.toLowerCase()
+    resultado = resultado.filter(u => u.name?.toLowerCase().includes(needle))
+  }
+  
+  if (filtro.value.email) {
+    const needle = filtro.value.email.toLowerCase()
+    resultado = resultado.filter(u => u.email?.toLowerCase().includes(needle))
+  }
+  
+  if (filtro.value.username) {
+    const needle = filtro.value.username.toLowerCase()
+    resultado = resultado.filter(u => u.username?.toLowerCase().includes(needle))
+  }
+  
+  if (filtro.value.status) {
+    const ativo = filtro.value.status === 'Ativo'
+    resultado = resultado.filter(u => u.is_active === ativo)
+  }
+  
+  return resultado
+})
 
 function voltarSeguro() {
   router.push('/ordens')

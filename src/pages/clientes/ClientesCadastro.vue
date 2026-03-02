@@ -155,7 +155,14 @@ function adicionarVeiculo() {
 }
 
 function removerVeiculo(index) {
-  form.value.veiculos.splice(index, 1)
+  $q.dialog({
+    title: 'Confirmar',
+    message: 'Deseja realmente excluir este veículo?',
+    cancel: { label: 'Cancelar', flat: true },
+    ok: { label: 'Excluir', color: 'negative' },
+  }).onOk(() => {
+    form.value.veiculos.splice(index, 1)
+  })
 }
 
 async function salvar() {
@@ -192,7 +199,7 @@ async function salvar() {
     }
 
     if (isEdit.value) {
-      await clienteService.atualizar(route.params.id, payload.cliente)
+      await clienteService.atualizar(route.params.id, payload)
       $q.notify({ type: 'positive', message: 'Cliente atualizado com sucesso!' })
     } else {
       await clienteService.criar(payload)

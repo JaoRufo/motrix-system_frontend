@@ -43,7 +43,7 @@ export const ordemService = {
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `ordem-servico-${id}.pdf`
+    link.download = `ordem-servico-${String(id).padStart(6, '0')}.pdf`
     link.click()
     window.URL.revokeObjectURL(url)
   }

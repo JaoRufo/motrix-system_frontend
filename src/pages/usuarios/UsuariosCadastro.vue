@@ -10,10 +10,6 @@
     <q-card class="q-pa-md shadow-2" bordered>
       <div class="row q-col-gutter-md">
         <div class="col-12 col-md-6">
-          <q-input v-model="form.name" label="Nome *" outlined dense />
-        </div>
-
-        <div class="col-12 col-md-6">
           <q-input v-model="form.username" label="Usuário *" outlined dense />
         </div>
 
@@ -83,7 +79,6 @@ const isPwd = ref(true)
 const roleOptions = ['user', 'admin']
 
 const form = ref({
-  name: '',
   username: '',
   email: '',
   password: '',
@@ -96,7 +91,7 @@ function voltarSeguro() {
 }
 
 async function salvar() {
-  if (!form.value.name || !form.value.username || !form.value.email || !form.value.role) {
+  if (!form.value.username || !form.value.email || !form.value.role) {
     $q.notify({ type: 'negative', message: 'Preencha todos os campos obrigatórios' })
     return
   }
@@ -110,7 +105,6 @@ async function salvar() {
 
   try {
     const payload = {
-      name: form.value.name,
       username: form.value.username,
       email: form.value.email,
       role: form.value.role,
@@ -142,7 +136,6 @@ onMounted(async () => {
     try {
       const usuario = await usuarioService.buscarPorId(route.params.id)
       form.value = {
-        name: usuario.name,
         username: usuario.username,
         email: usuario.email,
         password: '',

@@ -5,6 +5,9 @@ export const authService = {
     const data = await http.post('/auth/login', { username, password })
     
     if (data.token) {
+      if (!data.user.is_active) {
+        throw new Error('Usuário inativo. Entre em contato com o administrador.')
+      }
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
     }

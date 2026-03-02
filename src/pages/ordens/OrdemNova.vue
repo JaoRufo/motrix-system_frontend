@@ -19,9 +19,17 @@
             use-input
             @filter="filtrarClientes"
             @update:model-value="selecionarCliente"
-            option-label="nome"
+            option-label="label"
             option-value="id"
           >
+            <template v-slot:option="scope">
+              <q-item v-bind="scope.itemProps">
+                <q-item-section>
+                  <q-item-label>{{ scope.opt.nome }}</q-item-label>
+                  <q-item-label caption>{{ scope.opt.info }}</q-item-label>
+                </q-item-section>
+              </q-item>
+            </template>
             <template v-slot:no-option>
               <q-item>
                 <q-item-section class="text-grey"> Nenhum cliente encontrado </q-item-section>
@@ -63,6 +71,18 @@
             outlined
             dense
             @update:model-value="onStatusChange"
+          />
+        </div>
+
+        <div class="col-12 col-md-3">
+          <q-select
+            v-model="oficinaSelecionada"
+            :options="oficinasOptions"
+            label="Oficina *"
+            outlined
+            dense
+            option-label="nome"
+            option-value="id"
           />
         </div>
 
@@ -176,6 +196,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { clienteService } from 'src/services/clienteService'
+import { ordemService } from 'src/services/ordemService'
+import { oficinaService } from 'src/services/oficinaService'
 
 const route = useRoute()
 const router = useRouter()
@@ -189,6 +211,7 @@ function voltarSeguro() {
 
 const clienteSelecionado = ref(null)
 const veiculoSelecionado = ref(null)
+const oficinaSelecionada = ref(null)
 const kmAtual = ref(0)
 const status = ref('Aberta')
 const descricaoProblema = ref('')
@@ -199,6 +222,7 @@ const maoObra = ref([])
 const clientesOptions = ref([])
 const todosClientes = ref([])
 const veiculosOptions = ref([])
+const oficinasOptions = ref([])
 const salvando = ref(false)
 
 const statusOptions = ['Aberta', 'Em Andamento', 'Aguardando Orçamento', 'Finalizada', 'Cancelada']
@@ -223,9 +247,18 @@ function filtrarClientes(val, update) {
       clientesOptions.value = todosClientes.value
     } else {
       const needle = val.toLowerCase()
-      clientesOptions.value = todosClientes.value.filter(
-        (c) => c.nome.toLowerCase().indexOf(needle) > -1,
-      )
+      clientesOptions.value = todosClientes.value.filter((c) => {
+        const nome = c.nome?.toLowerCase() || ''
+        const cpf = c.cpf?.toLowerCase() || ''
+        const email = c.email?.toLowerCase() || ''
+        const placas = c.veiculos?.map((v) => v.placa?.toLowerCase()).join(' ') || ''
+        return (
+          nome.includes(needle) ||
+          cpf.includes(needle) ||
+          email.includes(needle) ||
+          placas.includes(needle)
+        )
+      })
     }
   })
 }
@@ -265,7 +298,7 @@ function removerMao(index) {
   maoObra.value.splice(index, 1)
 }
 
-function salvar() {
+async function salvar() {
   if (!clienteSelecionado.value) {
     $q.notify({
       type: 'negative',
@@ -283,6 +316,11 @@ function salvar() {
 
   if (!veiculoSelecionado.value) {
     $q.notify({ type: 'negative', message: 'Selecione um veículo' })
+    return
+  }
+
+  if (!oficinaSelecionada.value) {
+    $q.notify({ type: 'negative', message: 'Selecione uma oficina' })
     return
   }
 
@@ -304,84 +342,102 @@ function salvar() {
   salvando.value = true
 
   try {
-    const ordens = JSON.parse(localStorage.getItem('ordens') || '[]')
-
-    const ordemData = {
-      clienteId: clienteSelecionado.value.id,
-      cliente: clienteSelecionado.value.nome,
-      veiculo: veiculoSelecionado.value.label,
-      veiculoPlaca: veiculoSelecionado.value.value.placa,
-      kmAtual: kmAtual.value,
-      status: status.value,
-      descricaoProblema: descricaoProblema.value,
-      observacoes: observacoes.value,
-      motivoCancelamento: status.value === 'Cancelada' ? motivoCancelamento.value : null,
-      pecas: pecas.value.filter((p) => p.nome),
-      maoObra: maoObra.value.filter((m) => m.descricao),
-      total: total.value,
-      data: Date.now(),
+    const payload = {
+      ordem: {
+        cliente_id: clienteSelecionado.value.id,
+        veiculo_id: veiculoSelecionado.value.value.id,
+        veiculo_placa: veiculoSelecionado.value.value.placa,
+        km_atual: kmAtual.value,
+        status: status.value,
+        descricao_problema: descricaoProblema.value,
+        observacoes: observacoes.value || null,
+        motivo_cancelamento: status.value === 'Cancelada' ? motivoCancelamento.value : null,
+        oficina_id: oficinaSelecionada.value?.id || null,
+      },
+      pecas: pecas.value
+        .filter((p) => p.nome)
+        .map((p) => ({
+          nome: p.nome,
+          valor: p.valor || 0,
+        })),
+      maoObra: maoObra.value
+        .filter((m) => m.descricao)
+        .map((m) => ({
+          descricao: m.descricao,
+          valor: m.valor || 0,
+        })),
     }
 
     if (isEdit.value) {
-      const index = ordens.findIndex((o) => o.id == route.params.id)
-      ordens[index] = { ...ordens[index], ...ordemData }
+      await ordemService.atualizar(route.params.id, payload)
+      $q.notify({ type: 'positive', message: 'Ordem atualizada com sucesso!' })
     } else {
-      ordens.push({ id: Date.now(), ...ordemData })
+      await ordemService.criar(payload)
+      $q.notify({ type: 'positive', message: 'Ordem criada com sucesso!' })
     }
 
-    localStorage.setItem('ordens', JSON.stringify(ordens))
-
-    // Atualizar KM do veículo se finalizada ou cancelada
-    if (status.value === 'Finalizada' || status.value === 'Cancelada') {
-      const cliente = clienteService.buscarPorId(clienteSelecionado.value.id)
-      if (cliente) {
-        const veiculoIndex = cliente.veiculos.findIndex(
-          (v) => v.placa === veiculoSelecionado.value.value.placa,
-        )
-        if (veiculoIndex !== -1) {
-          cliente.veiculos[veiculoIndex].kmAtual = kmAtual.value
-          clienteService.atualizar(cliente.id, cliente)
-        }
-      }
-    }
-
-    $q.notify({ type: 'positive', message: 'Ordem salva com sucesso!' })
-    setTimeout(() => {
-      router.push('/ordens')
-    }, 300)
-  } catch {
-    $q.notify({ type: 'negative', message: 'Erro ao salvar ordem' })
+    router.push('/ordens')
+  } catch (error) {
+    $q.notify({ type: 'negative', message: error.message || 'Erro ao salvar ordem' })
   } finally {
     salvando.value = false
   }
 }
 
-onMounted(() => {
-  todosClientes.value = clienteService.listar()
-  clientesOptions.value = todosClientes.value
+onMounted(async () => {
+  try {
+    const clientes = await clienteService.listar()
+    todosClientes.value = clientes.map((c) => ({
+      ...c,
+      label: c.nome,
+      info: `${c.cpf || 'Sem CPF'} | ${c.email || 'Sem email'} | Veículos: ${c.veiculos?.map((v) => v.placa).join(', ') || 'Nenhum'}`,
+      veiculos: c.veiculos?.map((v) => ({
+        ...v,
+        id: v.id,
+        placa: v.placa,
+        modelo: v.modelo,
+        kmAtual: v.km_atual || v.kmAtual || 0,
+      })),
+    }))
+    clientesOptions.value = todosClientes.value
 
-  if (isEdit.value) {
-    const ordens = JSON.parse(localStorage.getItem('ordens') || '[]')
-    const ordem = ordens.find((o) => o.id == route.params.id)
-    if (ordem) {
-      const cliente = todosClientes.value.find((c) => c.id == ordem.clienteId)
+    const oficinas = await oficinaService.buscar()
+    oficinasOptions.value = Array.isArray(oficinas) ? oficinas : [oficinas]
+
+    if (isEdit.value) {
+      const ordem = await ordemService.buscarPorId(route.params.id)
+
+      const cliente = todosClientes.value.find((c) => c.id == ordem.cliente_id)
       if (cliente) {
         clienteSelecionado.value = cliente
         selecionarCliente(cliente)
 
-        const veiculo = veiculosOptions.value.find((v) => v.value.placa === ordem.veiculoPlaca)
+        const veiculo = veiculosOptions.value.find((v) => v.value.id === ordem.veiculo_id)
         if (veiculo) {
           veiculoSelecionado.value = veiculo
-          kmAtual.value = ordem.kmAtual
         }
       }
+
+      if (ordem.oficina_id) {
+        oficinaSelecionada.value = oficinasOptions.value.find((o) => o.id === ordem.oficina_id)
+      }
+
+      kmAtual.value = ordem.km_atual || 0
       status.value = ordem.status || 'Aberta'
-      descricaoProblema.value = ordem.descricaoProblema || ''
+      descricaoProblema.value = ordem.descricao_problema || ''
       observacoes.value = ordem.observacoes || ''
-      motivoCancelamento.value = ordem.motivoCancelamento || ''
-      pecas.value = ordem.pecas || []
-      maoObra.value = ordem.maoObra || []
+      motivoCancelamento.value = ordem.motivo_cancelamento || ''
+      pecas.value = (ordem.pecas || []).map((p) => ({
+        nome: p.nome,
+        valor: parseFloat(p.valor) || 0,
+      }))
+      maoObra.value = (ordem.maoObra || ordem.mao_obra || []).map((m) => ({
+        descricao: m.descricao,
+        valor: parseFloat(m.valor) || 0,
+      }))
     }
+  } catch (error) {
+    $q.notify({ type: 'negative', message: 'Erro ao carregar dados: ' + (error.message || '') })
   }
 })
 </script>
