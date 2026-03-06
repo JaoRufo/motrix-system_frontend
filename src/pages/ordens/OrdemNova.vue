@@ -3,7 +3,7 @@
     <div class="row items-center q-mb-md">
       <q-btn flat round dense icon="arrow_back" @click="voltarSeguro" class="q-mr-sm" />
       <div class="text-h6 text-weight-bold">
-        {{ isEdit ? 'Editar Ordem' : 'Nova Ordem de Serviço' }}
+        {{ isEdit ? `Editar Ordem #${route.params.id}` : 'Nova Ordem de Serviço' }}
       </div>
     </div>
 
@@ -412,6 +412,8 @@ onMounted(async () => {
         clienteSelecionado.value = cliente
         selecionarCliente(cliente)
 
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
         const veiculo = veiculosOptions.value.find((v) => v.value.id === ordem.veiculo_id)
         if (veiculo) {
           veiculoSelecionado.value = veiculo
@@ -419,7 +421,7 @@ onMounted(async () => {
       }
 
       if (ordem.oficina_id) {
-        oficinaSelecionada.value = oficinasOptions.value.find((o) => o.id === ordem.oficina_id)
+        oficinaSelecionada.value = oficinasOptions.value.find((o) => o.id === ordem.oficina_id) || null
       }
 
       kmAtual.value = ordem.km_atual || 0

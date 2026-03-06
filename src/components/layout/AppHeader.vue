@@ -5,6 +5,8 @@
 
       <q-space />
 
+      <div class="text-subtitle2 q-mr-md">{{ saudacao }} {{ nomeUsuario }}</div>
+
       <!-- Dark Mode Toggle -->
       <q-btn flat round :icon="$q.dark.isActive ? 'dark_mode' : 'light_mode'" @click="toggleDark" />
 
@@ -33,6 +35,18 @@ const router = useRouter()
 
 const headerClass = computed(() => {
   return $q.dark.isActive ? 'bg-dark text-white' : 'bg-white text-dark'
+})
+
+const saudacao = computed(() => {
+  const hora = new Date().getHours()
+  if (hora >= 6 && hora < 12) return 'Bom dia'
+  if (hora >= 12 && hora < 18) return 'Boa tarde'
+  return 'Boa noite'
+})
+
+const nomeUsuario = computed(() => {
+  const user = authService.getUser()
+  return user?.username || user?.nome || 'Usuário'
 })
 
 function toggleDark() {

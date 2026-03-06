@@ -10,6 +10,10 @@
     <q-card class="q-pa-md shadow-2" bordered>
       <div class="row q-col-gutter-md">
         <div class="col-12 col-md-6">
+          <q-input v-model="form.name" label="Nome *" outlined dense />
+        </div>
+
+        <div class="col-12 col-md-6">
           <q-input v-model="form.username" label="Usuário *" outlined dense />
         </div>
 
@@ -46,10 +50,13 @@
         </div>
 
         <div class="col-12 col-md-6">
+          <div class="q-mb-sm text-subtitle2">Status do Usuário</div>
           <q-toggle
             v-model="form.is_active"
-            label="Usuário Ativo"
+            :label="form.is_active ? 'Ativo' : 'Inativo'"
             color="primary"
+            true-value="ativo"
+            false-value="inativo"
           />
         </div>
       </div>
@@ -67,6 +74,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { usuarioService } from '../../services/usuarioService'
+import { getErrorMessage } from '../../utils/errorHandler'
 
 const router = useRouter()
 const route = useRoute()
@@ -79,11 +87,12 @@ const isPwd = ref(true)
 const roleOptions = ['user', 'admin']
 
 const form = ref({
+  name: '',
   username: '',
   email: '',
   password: '',
   role: 'user',
-  is_active: true
+  is_active: 'ativo',
 })
 
 function voltarSeguro() {
@@ -91,41 +100,45 @@ function voltarSeguro() {
 }
 
 async function salvar() {
-  if (!form.value.username || !form.value.email || !form.value.role) {
+  if (!form.value.name || !form.value.email) {
     $q.notify({ type: 'negative', message: 'Preencha todos os campos obrigatórios' })
     return
   }
 
-  if (!isEdit.value && !form.value.password) {
-    $q.notify({ type: 'negative', message: 'Informe a senha' })
+  if (!isEdit.value && (!form.value.username || !form.value.password || !form.value.role)) {
+    $q.notify({ type: 'negative', message: 'Preencha todos os campos obrigatórios' })
     return
   }
 
   salvando.value = true
 
   try {
-    const payload = {
-      username: form.value.username,
-      email: form.value.email,
-      role: form.value.role,
-      is_active: form.value.is_active
-    }
-
-    if (form.value.password) {
-      payload.password = form.value.password
-    }
-
     if (isEdit.value) {
+      const payload = {
+        nome: form.value.name,
+        username: form.value.username,
+        email: form.value.email,
+        status: form.value.is_active,
+        role: form.value.role,
+      }
       await usuarioService.atualizar(route.params.id, payload)
       $q.notify({ type: 'positive', message: 'Usuário atualizado com sucesso!' })
+      router.push('/usuarios/consulta')
     } else {
+      const payload = {
+        nome: form.value.name,
+        username: form.value.username,
+        email: form.value.email,
+        senha: form.value.password,
+        role: form.value.role,
+        status: form.value.is_active,
+      }
       await usuarioService.criar(payload)
       $q.notify({ type: 'positive', message: 'Usuário cadastrado com sucesso!' })
+      router.push('/usuarios/consulta')
     }
-
-    router.push('/usuarios/consulta')
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.message || 'Erro ao salvar usuário' })
+    $q.notify({ type: 'negative', message: getErrorMessage(error) })
   } finally {
     salvando.value = false
   }
@@ -136,14 +149,15 @@ onMounted(async () => {
     try {
       const usuario = await usuarioService.buscarPorId(route.params.id)
       form.value = {
+        name: usuario.nome || '',
         username: usuario.username,
         email: usuario.email,
         password: '',
         role: usuario.role,
-        is_active: usuario.is_active
+        is_active: usuario.status || 'ativo',
       }
-    } catch {
-      $q.notify({ type: 'negative', message: 'Erro ao carregar usuário' })
+    } catch (error) {
+      $q.notify({ type: 'negative', message: getErrorMessage(error) })
       router.push('/usuarios/consulta')
     }
   }

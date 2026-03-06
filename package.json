@@ -12,6 +12,8 @@
     "test": "echo \"No test specified\" && exit 0",
     "dev": "quasar dev",
     "build": "quasar build",
+    "build:prod": "quasar build --mode production",
+    "preview": "vite preview --outDir dist/spa",
     "postinstall": "quasar prepare"
   },
   "dependencies": {

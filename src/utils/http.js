@@ -14,6 +14,14 @@ class HttpClient {
 
     try {
       const response = await fetch(url, config)
+
+      if (response.status === 401 || response.status === 403) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        window.location.href = '/login'
+        throw { status: response.status, message: 'Sessão expirada' }
+      }
+
       const data = await response.json()
 
       if (!response.ok) {
@@ -26,7 +34,7 @@ class HttpClient {
 
       return data
     } catch (error) {
-      if (error.status === 401) {
+      if (error.status === 401 || error.status === 403) {
         localStorage.removeItem('token')
         localStorage.removeItem('user')
         window.location.href = '/login'

@@ -180,32 +180,39 @@ async function salvar() {
   salvando.value = true
 
   try {
-    const payload = {
-      cliente: {
+    if (isEdit.value) {
+      const payload = {
         nome: form.value.nome,
         cpf: form.value.cpf,
         telefone: form.value.telefone,
         email: form.value.email,
         endereco: form.value.endereco
-      },
-      veiculos: veiculosValidos.map(v => ({
-        placa: v.placa,
-        modelo: v.modelo,
-        ano: v.ano,
-        chassi: v.chassi || '',
-        cor: v.cor || '',
-        km_atual: v.kmAtual || 0
-      }))
-    }
-
-    if (isEdit.value) {
+      }
       await clienteService.atualizar(route.params.id, payload)
       $q.notify({ type: 'positive', message: 'Cliente atualizado com sucesso!' })
+      router.push('/clientes/consulta').then(() => router.go(0))
     } else {
+      const payload = {
+        cliente: {
+          nome: form.value.nome,
+          cpf: form.value.cpf,
+          telefone: form.value.telefone,
+          email: form.value.email,
+          endereco: form.value.endereco
+        },
+        veiculos: veiculosValidos.map(v => ({
+          placa: v.placa,
+          modelo: v.modelo,
+          ano: v.ano,
+          chassi: v.chassi || '',
+          cor: v.cor || '',
+          km_atual: v.kmAtual || 0
+        }))
+      }
       await clienteService.criar(payload)
       $q.notify({ type: 'positive', message: 'Cliente cadastrado com sucesso!' })
+      router.push('/clientes/consulta')
     }
-    router.push('/clientes/consulta')
   } catch (error) {
     $q.notify({ type: 'negative', message: error.message || 'Erro ao salvar cliente' })
   } finally {

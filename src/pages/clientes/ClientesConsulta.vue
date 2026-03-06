@@ -63,7 +63,7 @@
               flat
               round
               color="primary"
-              :to="`/clientes/cadastro/${props.row.id}`"
+              @click="editarCliente(props.row.id)"
             >
               <q-tooltip>Editar</q-tooltip>
             </q-btn>
@@ -140,7 +140,7 @@
                     <q-list bordered separator v-if="ordem.pecas && ordem.pecas.length">
                       <q-item v-for="(peca, idx) in ordem.pecas" :key="idx">
                         <q-item-section>{{ peca.nome }}</q-item-section>
-                        <q-item-section side>R$ {{ peca.valor.toFixed(2) }}</q-item-section>
+                        <q-item-section side>R$ {{ parseFloat(peca.valor || 0).toFixed(2) }}</q-item-section>
                       </q-item>
                     </q-list>
                     <div v-else class="text-grey q-mb-md">Nenhuma peça utilizada</div>
@@ -151,7 +151,7 @@
                     <q-list bordered separator v-if="ordem.maoObra && ordem.maoObra.length">
                       <q-item v-for="(mao, idx) in ordem.maoObra" :key="idx">
                         <q-item-section>{{ mao.descricao }}</q-item-section>
-                        <q-item-section side>R$ {{ mao.valor.toFixed(2) }}</q-item-section>
+                        <q-item-section side>R$ {{ parseFloat(mao.valor || 0).toFixed(2) }}</q-item-section>
                       </q-item>
                     </q-list>
                     <div v-else class="text-grey q-mb-md">Nenhum serviço realizado</div>
@@ -177,6 +177,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { clienteService } from 'src/services/clienteService'
+import { ordemService } from 'src/services/ordemService'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -269,11 +270,54 @@ async function carregar() {
 async function verHistorico(cliente) {
   clienteSelecionado.value = cliente
   try {
-    historicoOrdens.value = await clienteService.buscarHistorico(cliente.id)
+    const historico = await clienteService.buscarHistorico(cliente.id)
+    
+    const ordensCompletas = await Promise.all(
+      historico.map(async (ordem) => {
+        try {
+          const ordemCompleta = await ordemService.buscarPorId(ordem.id)
+          return {
+            id: ordemCompleta.id,
+            veiculo: ordem.modelo ? `${ordem.modelo} - ${ordem.placa}` : ordem.veiculo_placa || 'N/A',
+            kmAtual: ordemCompleta.km_atual,
+            status: ordemCompleta.status,
+            descricaoProblema: ordemCompleta.descricao_problema,
+            observacoes: ordemCompleta.observacoes,
+            motivoCancelamento: ordemCompleta.motivo_cancelamento,
+            data: ordemCompleta.created_at || ordemCompleta.data,
+            total: parseFloat(ordemCompleta.total) || 0,
+            pecas: (ordemCompleta.pecas || []).map(p => ({ ...p, valor: parseFloat(p.valor || 0) })),
+            maoObra: (ordemCompleta.maoObra || ordemCompleta.mao_obra || []).map(m => ({ ...m, valor: parseFloat(m.valor || 0) }))
+          }
+        } catch {
+          return {
+            id: ordem.id,
+            veiculo: ordem.modelo ? `${ordem.modelo} - ${ordem.placa}` : ordem.veiculo_placa || 'N/A',
+            kmAtual: ordem.km_atual,
+            status: ordem.status,
+            descricaoProblema: ordem.descricao_problema,
+            observacoes: ordem.observacoes,
+            motivoCancelamento: ordem.motivo_cancelamento,
+            data: ordem.created_at || ordem.data,
+            total: parseFloat(ordem.total) || 0,
+            pecas: [],
+            maoObra: []
+          }
+        }
+      })
+    )
+    
+    historicoOrdens.value = ordensCompletas
     dialogHistorico.value = true
   } catch {
     $q.notify({ type: 'negative', message: 'Erro ao carregar histórico' })
   }
+}
+
+function editarCliente(id) {
+  router.push(`/clientes/cadastro/${id}`).then(() => {
+    router.go(0)
+  })
 }
 
 function excluir(id) {

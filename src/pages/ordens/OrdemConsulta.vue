@@ -37,7 +37,7 @@
       <q-table :rows="ordensFiltradas" :columns="columns" row-key="id" flat :loading="loading">
         <template v-slot:body-cell-id="props">
           <q-td>
-            <span @click="verDetalhes(props.row)" class="id-link">
+            <span @click="verDetalhes(props.row.id)" class="id-link">
               {{ props.row.id }}
             </span>
           </q-td>
@@ -51,7 +51,7 @@
 
         <template v-slot:body-cell-acoes="props">
           <q-td align="center">
-            <q-btn icon="visibility" flat round color="info" @click="verDetalhes(props.row)">
+            <q-btn icon="visibility" flat round color="info" @click="verDetalhes(props.row.id)">
               <q-tooltip>Visualizar Detalhes</q-tooltip>
             </q-btn>
             <q-btn icon="edit" flat round color="primary" @click="editarOrdem(props.row.id)">
@@ -74,6 +74,9 @@
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">Ordem de Serviço #{{ ordemSelecionada.id }}</div>
           <q-space />
+          <q-btn icon="edit" flat round color="primary" @click="editarOrdem(ordemSelecionada.id)">
+            <q-tooltip>Editar</q-tooltip>
+          </q-btn>
           <q-btn
             icon="picture_as_pdf"
             flat
@@ -93,9 +96,34 @@
               <div class="text-body1">{{ ordemSelecionada.cliente }}</div>
             </div>
 
+            <div v-if="ordemSelecionada.telefone" class="col-12 col-md-6">
+              <div class="text-subtitle2 text-grey">Telefone</div>
+              <div class="text-body1">{{ ordemSelecionada.telefone }}</div>
+            </div>
+
             <div class="col-12 col-md-6">
               <div class="text-subtitle2 text-grey">Veículo</div>
               <div class="text-body1">{{ ordemSelecionada.veiculo }}</div>
+            </div>
+
+            <div v-if="ordemSelecionada.veiculoModelo" class="col-12 col-md-6">
+              <div class="text-subtitle2 text-grey">Modelo</div>
+              <div class="text-body1">{{ ordemSelecionada.veiculoModelo }}</div>
+            </div>
+
+            <div v-if="ordemSelecionada.veiculoAno" class="col-12 col-md-6">
+              <div class="text-subtitle2 text-grey">Ano</div>
+              <div class="text-body1">{{ ordemSelecionada.veiculoAno }}</div>
+            </div>
+
+            <div v-if="ordemSelecionada.veiculoChassi" class="col-12 col-md-6">
+              <div class="text-subtitle2 text-grey">Chassi</div>
+              <div class="text-body1">{{ ordemSelecionada.veiculoChassi }}</div>
+            </div>
+
+            <div v-if="ordemSelecionada.veiculoCor" class="col-12 col-md-6">
+              <div class="text-subtitle2 text-grey">Cor</div>
+              <div class="text-body1">{{ ordemSelecionada.veiculoCor }}</div>
             </div>
 
             <div v-if="ordemSelecionada.oficina" class="col-12 col-md-6">
@@ -145,7 +173,7 @@
           <q-list bordered separator v-if="ordemSelecionada.pecas && ordemSelecionada.pecas.length">
             <q-item v-for="(peca, idx) in ordemSelecionada.pecas" :key="idx">
               <q-item-section>{{ peca.nome }}</q-item-section>
-              <q-item-section side>R$ {{ peca.valor.toFixed(2) }}</q-item-section>
+              <q-item-section side>R$ {{ parseFloat(peca.valor || 0).toFixed(2) }}</q-item-section>
             </q-item>
           </q-list>
           <div v-else class="text-grey">Nenhuma peça utilizada</div>
@@ -160,7 +188,7 @@
           >
             <q-item v-for="(mao, idx) in ordemSelecionada.maoObra" :key="idx">
               <q-item-section>{{ mao.descricao }}</q-item-section>
-              <q-item-section side>R$ {{ mao.valor.toFixed(2) }}</q-item-section>
+              <q-item-section side>R$ {{ parseFloat(mao.valor || 0).toFixed(2) }}</q-item-section>
             </q-item>
           </q-list>
           <div v-else class="text-grey">Nenhum serviço realizado</div>
@@ -181,6 +209,8 @@ import { ref, onMounted, computed } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { ordemService } from '../../services/ordemService'
+import { clienteService } from '../../services/clienteService'
+import { oficinaService } from '../../services/oficinaService'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -228,8 +258,7 @@ const ordensFiltradas = computed(() => {
 })
 
 const columns = [
-  { name: 'id', label: 'ID', field: 'id', align: 'left' },
-  { name: 'cliente', label: 'Cliente', field: 'cliente', align: 'left' },
+  { name: 'id', label: 'O.S', field: 'id', align: 'left' },
   { name: 'veiculo', label: 'Veículo', field: 'veiculo', align: 'left' },
   { name: 'kmAtual', label: 'KM', field: 'kmAtual', align: 'left' },
   { name: 'status', label: 'Status', field: 'status', align: 'left' },
@@ -264,26 +293,31 @@ async function carregar() {
   loading.value = true
   try {
     const data = await ordemService.listar()
-    ordens.value = data.map((ordem) => ({
-      id: ordem.id,
-      cliente: ordem.cliente?.nome || ordem.cliente_nome || 'N/A',
-      clienteId: ordem.cliente_id,
-      veiculo: ordem.veiculo
-        ? `${ordem.veiculo.modelo} - ${ordem.veiculo.placa}`
-        : ordem.veiculo_placa || 'N/A',
-      veiculoId: ordem.veiculo_id,
-      veiculoPlaca: ordem.veiculo_placa,
-      kmAtual: ordem.km_atual,
-      status: ordem.status,
-      descricaoProblema: ordem.descricao_problema,
-      observacoes: ordem.observacoes,
-      motivoCancelamento: ordem.motivo_cancelamento,
-      data: ordem.created_at || ordem.data,
-      total: parseFloat(ordem.total) || 0,
-      pecas: ordem.pecas || [],
-      maoObra: ordem.maoObra || ordem.mao_obra || [],
-      oficina: ordem.oficina || null,
-    }))
+    ordens.value = data.map((ordem) => {
+      const clienteNome = ordem.cliente?.nome || ordem.cliente_nome || 'N/A'
+      const oficinaNome = ordem.oficina?.nome || null
+
+      return {
+        id: ordem.id,
+        cliente: clienteNome,
+        clienteId: ordem.cliente_id,
+        veiculo: ordem.veiculo
+          ? `${ordem.veiculo.modelo} - ${ordem.veiculo.placa}`
+          : ordem.veiculo_placa || 'N/A',
+        veiculoId: ordem.veiculo_id,
+        veiculoPlaca: ordem.veiculo_placa,
+        kmAtual: ordem.km_atual,
+        status: ordem.status,
+        descricaoProblema: ordem.descricao_problema,
+        observacoes: ordem.observacoes,
+        motivoCancelamento: ordem.motivo_cancelamento,
+        data: ordem.created_at || ordem.data,
+        total: parseFloat(ordem.total) || 0,
+        pecas: ordem.pecas || [],
+        maoObra: ordem.maoObra || ordem.mao_obra || [],
+        oficina: oficinaNome ? { nome: oficinaNome } : null,
+      }
+    })
   } catch {
     $q.notify({ type: 'negative', message: 'Erro ao carregar ordens' })
   } finally {
@@ -291,13 +325,83 @@ async function carregar() {
   }
 }
 
-function verDetalhes(ordem) {
-  ordemSelecionada.value = ordem
-  dialogDetalhes.value = true
+async function verDetalhes(ordemId) {
+  try {
+    const ordem = await ordemService.buscarPorId(ordemId)
+
+    let clienteNome = 'N/A'
+    let clienteTelefone = null
+    let oficinaNome = null
+    let veiculoInfo = {}
+
+    if (ordem.cliente_id) {
+      try {
+        const cliente = await clienteService.buscarPorId(ordem.cliente_id)
+        clienteNome = cliente.nome || 'N/A'
+        clienteTelefone = cliente.telefone || null
+
+        if (ordem.veiculo_id && cliente.veiculos) {
+          const veiculo = cliente.veiculos.find((v) => v.id === ordem.veiculo_id)
+          if (veiculo) {
+            veiculoInfo = {
+              modelo: veiculo.modelo,
+              ano: veiculo.ano,
+              chassi: veiculo.chassi,
+              cor: veiculo.cor,
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao buscar cliente:', error)
+      }
+    }
+
+    if (ordem.oficina_id) {
+      try {
+        const oficinas = await oficinaService.buscar()
+        const oficinasArray = Array.isArray(oficinas) ? oficinas : [oficinas]
+        const oficina = oficinasArray.find((o) => o.id === ordem.oficina_id)
+        if (oficina) oficinaNome = oficina.nome
+      } catch (error) {
+        console.error('Erro ao buscar oficina:', error)
+      }
+    }
+
+    ordemSelecionada.value = {
+      id: ordem.id,
+      cliente: clienteNome,
+      telefone: clienteTelefone,
+      veiculo: ordem.veiculo
+        ? `${ordem.veiculo.modelo} - ${ordem.veiculo.placa}`
+        : ordem.veiculo_placa || 'N/A',
+      veiculoModelo: veiculoInfo.modelo || null,
+      veiculoAno: veiculoInfo.ano || null,
+      veiculoChassi: veiculoInfo.chassi || null,
+      veiculoCor: veiculoInfo.cor || null,
+      kmAtual: ordem.km_atual,
+      status: ordem.status,
+      descricaoProblema: ordem.descricao_problema,
+      observacoes: ordem.observacoes,
+      motivoCancelamento: ordem.motivo_cancelamento,
+      data: ordem.created_at || ordem.data,
+      total: parseFloat(ordem.total) || 0,
+      pecas: (ordem.pecas || []).map((p) => ({ ...p, valor: parseFloat(p.valor || 0) })),
+      maoObra: (ordem.maoObra || ordem.mao_obra || []).map((m) => ({
+        ...m,
+        valor: parseFloat(m.valor || 0),
+      })),
+      oficina: oficinaNome ? { nome: oficinaNome } : null,
+    }
+    dialogDetalhes.value = true
+  } catch {
+    $q.notify({ type: 'negative', message: 'Erro ao carregar detalhes da ordem' })
+  }
 }
 
 function editarOrdem(id) {
-  router.push(`/ordens/nova/${id}`)
+  router.push(`/ordens/nova/${id}`).then(() => {
+    router.go(0)
+  })
 }
 
 async function baixarPDF(id) {
