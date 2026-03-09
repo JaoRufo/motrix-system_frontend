@@ -65,7 +65,15 @@
         </div>
 
         <div class="col-12 col-md-3">
-          <q-input v-model="veiculo.chassi" label="Chassi" outlined dense />
+          <q-input
+            v-model="veiculo.chassi"
+            label="Chassi *"
+            outlined
+            dense
+            maxlength="17"
+            @update:model-value="(val) => (veiculo.chassi = formatarChassi(val))"
+            :rules="[(val) => !val || val.length === 17 || 'Chassi deve ter 17 caracteres']"
+          />
         </div>
 
         <div class="col-12 col-md-2">
@@ -112,7 +120,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { clienteService } from 'src/services/clienteService'
+import { veiculoService } from 'src/services/veiculoService'
 import { formatarPlaca } from 'src/utils/formatters'
+
+function formatarChassi(val) {
+  if (!val) return ''
+  return val.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 17)
+}
 
 const router = useRouter()
 const route = useRoute()
@@ -155,12 +169,23 @@ function adicionarVeiculo() {
 }
 
 function removerVeiculo(index) {
+  const veiculo = form.value.veiculos[index]
+
   $q.dialog({
     title: 'Confirmar',
     message: 'Deseja realmente excluir este veículo?',
     cancel: { label: 'Cancelar', flat: true },
     ok: { label: 'Excluir', color: 'negative' },
-  }).onOk(() => {
+  }).onOk(async () => {
+    if (veiculo.id) {
+      try {
+        await veiculoService.excluir(veiculo.id)
+        $q.notify({ type: 'positive', message: 'Veículo excluído com sucesso!' })
+      } catch {
+        $q.notify({ type: 'negative', message: 'Erro ao excluir veículo' })
+        return
+      }
+    }
     form.value.veiculos.splice(index, 1)
   })
 }
@@ -177,16 +202,34 @@ async function salvar() {
     return
   }
 
+  for (const v of veiculosValidos) {
+    if (v.chassi && v.chassi.length !== 17) {
+      $q.notify({ type: 'negative', message: 'Chassi deve ter exatamente 17 caracteres' })
+      return
+    }
+  }
+
   salvando.value = true
 
   try {
     if (isEdit.value) {
       const payload = {
-        nome: form.value.nome,
-        cpf: form.value.cpf,
-        telefone: form.value.telefone,
-        email: form.value.email,
-        endereco: form.value.endereco
+        cliente: {
+          nome: form.value.nome,
+          cpf: form.value.cpf,
+          telefone: form.value.telefone,
+          email: form.value.email,
+          endereco: form.value.endereco,
+        },
+        veiculos: veiculosValidos.map((v) => ({
+          id: v.id,
+          placa: v.placa,
+          modelo: v.modelo,
+          ano: v.ano,
+          chassi: v.chassi || '',
+          cor: v.cor || '',
+          km_atual: v.kmAtual || 0,
+        })),
       }
       await clienteService.atualizar(route.params.id, payload)
       $q.notify({ type: 'positive', message: 'Cliente atualizado com sucesso!' })
@@ -198,16 +241,16 @@ async function salvar() {
           cpf: form.value.cpf,
           telefone: form.value.telefone,
           email: form.value.email,
-          endereco: form.value.endereco
+          endereco: form.value.endereco,
         },
-        veiculos: veiculosValidos.map(v => ({
+        veiculos: veiculosValidos.map((v) => ({
           placa: v.placa,
           modelo: v.modelo,
           ano: v.ano,
           chassi: v.chassi || '',
           cor: v.cor || '',
-          km_atual: v.kmAtual || 0
-        }))
+          km_atual: v.kmAtual || 0,
+        })),
       }
       await clienteService.criar(payload)
       $q.notify({ type: 'positive', message: 'Cliente cadastrado com sucesso!' })
@@ -231,19 +274,22 @@ onMounted(async () => {
           telefone: cliente.telefone,
           email: cliente.email,
           endereco: cliente.endereco,
-          veiculos: cliente.veiculos?.map(v => ({
+          veiculos: cliente.veiculos?.map((v) => ({
+            id: v.id,
             placa: v.placa,
             modelo: v.modelo,
             ano: v.ano,
             chassi: v.chassi,
             cor: v.cor,
-            kmAtual: v.km_atual
-          })) || [{
-            placa: '',
-            modelo: '',
-            ano: '',
-            kmAtual: 0
-          }]
+            kmAtual: v.km_atual,
+          })) || [
+            {
+              placa: '',
+              modelo: '',
+              ano: '',
+              kmAtual: 0,
+            },
+          ],
         }
       }
     } catch {

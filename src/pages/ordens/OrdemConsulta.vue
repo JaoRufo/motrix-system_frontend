@@ -7,34 +7,30 @@
     </div>
 
     <q-card flat bordered>
-      <q-card-section>
-        <div class="row q-col-gutter-md q-mb-md">
-          <div class="col-12 col-md-3">
-            <q-input v-model="filtro.cliente" label="Cliente" outlined dense clearable />
-          </div>
-          <div class="col-12 col-md-2">
-            <q-input v-model="filtro.placa" label="Placa" outlined dense clearable />
-          </div>
-          <div class="col-12 col-md-2">
-            <q-input v-model="filtro.id" label="Nº O.S" outlined dense clearable type="number" />
-          </div>
-          <div class="col-12 col-md-2">
-            <q-select
-              v-model="filtro.status"
-              :options="statusOptions"
-              label="Status"
-              outlined
-              dense
-              clearable
-            />
-          </div>
-          <div class="col-12 col-md-3 flex items-center">
-            <q-btn label="Limpar Filtros" flat color="grey" @click="limparFiltros" />
-          </div>
-        </div>
+      <q-card-section class="row items-center">
+        <q-btn
+          label="Filtros"
+          icon="filter_list"
+          color="primary"
+          outline
+          @click="dialogFiltros = true"
+        />
+        <q-space />
+        <q-chip v-if="temFiltrosAtivos" color="primary" text-color="white" icon="filter_alt">
+          Filtros ativos
+        </q-chip>
       </q-card-section>
 
-      <q-table :rows="ordensFiltradas" :columns="columns" row-key="id" flat :loading="loading">
+      <q-table
+        :rows="ordensFiltradas"
+        :columns="columns"
+        row-key="id"
+        flat
+        :loading="loading"
+        v-model:pagination="pagination"
+        @request="onRequest"
+        :rows-per-page-options="[10, 25, 50]"
+      >
         <template v-slot:body-cell-id="props">
           <q-td>
             <span @click="verDetalhes(props.row.id)" class="id-link">
@@ -67,6 +63,36 @@
         </template>
       </q-table>
     </q-card>
+
+    <!-- Dialog de Filtros -->
+    <q-dialog v-model="dialogFiltros">
+      <q-card style="min-width: 400px">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-h6">Filtros</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section>
+          <q-input v-model="filtro.cliente" label="Cliente" outlined dense class="q-mb-md" />
+          <q-input v-model="filtro.placa" label="Placa" outlined dense class="q-mb-md" />
+          <q-input v-model="filtro.id" label="Nº O.S" outlined dense type="number" class="q-mb-md" />
+          <q-select
+            v-model="filtro.status"
+            :options="statusOptions"
+            label="Status"
+            outlined
+            dense
+            clearable
+          />
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn label="Limpar" flat color="grey" @click="limparFiltros" />
+          <q-btn label="Aplicar" color="primary" @click="dialogFiltros = false" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
 
     <!-- Dialog de Detalhes -->
     <q-dialog v-model="dialogDetalhes" maximized>
@@ -215,6 +241,7 @@ import { oficinaService } from '../../services/oficinaService'
 const $q = useQuasar()
 const router = useRouter()
 
+const dialogFiltros = ref(false)
 const filtro = ref({
   cliente: '',
   placa: '',
@@ -257,6 +284,10 @@ const ordensFiltradas = computed(() => {
   return resultado
 })
 
+const temFiltrosAtivos = computed(() => {
+  return !!(filtro.value.cliente || filtro.value.placa || filtro.value.id || filtro.value.status)
+})
+
 const columns = [
   { name: 'id', label: 'O.S', field: 'id', align: 'left' },
   { name: 'veiculo', label: 'Veículo', field: 'veiculo', align: 'left' },
@@ -273,6 +304,11 @@ const columns = [
 ]
 
 const ordens = ref([])
+const pagination = ref({
+  page: 1,
+  rowsPerPage: 10,
+  rowsNumber: 0
+})
 const dialogDetalhes = ref(false)
 const ordemSelecionada = ref(null)
 const loading = ref(false)
@@ -292,8 +328,8 @@ function getStatusColor(status) {
 async function carregar() {
   loading.value = true
   try {
-    const data = await ordemService.listar()
-    ordens.value = data.map((ordem) => {
+    const response = await ordemService.listar(pagination.value.page, pagination.value.rowsPerPage)
+    ordens.value = response.data.map((ordem) => {
       const clienteNome = ordem.cliente?.nome || ordem.cliente_nome || 'N/A'
       const oficinaNome = ordem.oficina?.nome || null
 
@@ -318,11 +354,18 @@ async function carregar() {
         oficina: oficinaNome ? { nome: oficinaNome } : null,
       }
     })
+    pagination.value.rowsNumber = response.total
   } catch {
     $q.notify({ type: 'negative', message: 'Erro ao carregar ordens' })
   } finally {
     loading.value = false
   }
+}
+
+function onRequest(props) {
+  pagination.value.page = props.pagination.page
+  pagination.value.rowsPerPage = props.pagination.rowsPerPage
+  carregar()
 }
 
 async function verDetalhes(ordemId) {

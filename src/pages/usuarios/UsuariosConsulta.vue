@@ -16,31 +16,39 @@
     </div>
 
     <q-card flat bordered>
-      <q-card-section>
-        <div class="row q-col-gutter-md q-mb-md">
-          <div class="col-12 col-md-3">
-            <q-input v-model="filtro.nome" label="Nome" outlined dense clearable />
-          </div>
-          <div class="col-12 col-md-3">
-            <q-input v-model="filtro.email" label="E-mail" outlined dense clearable />
-          </div>
-          <div class="col-12 col-md-2">
-            <q-input v-model="filtro.username" label="Usuário" outlined dense clearable />
-          </div>
-          <div class="col-12 col-md-2">
-            <q-select v-model="filtro.status" :options="['Ativo', 'Inativo']" label="Status" outlined dense clearable />
-          </div>
-          <div class="col-12 col-md-2 flex items-center">
-            <q-btn label="Limpar" flat color="grey" @click="limparFiltros" />
-          </div>
-        </div>
+      <q-card-section class="row items-center">
+        <q-btn
+          label="Filtros"
+          icon="filter_list"
+          color="primary"
+          outline
+          @click="dialogFiltros = true"
+        />
+        <q-space />
+        <q-chip v-if="temFiltrosAtivos" color="primary" text-color="white" icon="filter_alt">
+          Filtros ativos
+        </q-chip>
       </q-card-section>
 
-      <q-table :rows="usuariosFiltrados" :columns="columns" row-key="id" flat :loading="loading">
+      <q-table
+        :rows="usuariosFiltrados"
+        :columns="columns"
+        row-key="id"
+        flat
+        :loading="loading"
+        v-model:pagination="pagination"
+        @request="onRequest"
+        :rows-per-page-options="[10, 25, 50]"
+      >
         <template v-slot:body="props">
-          <q-tr :props="props" :class="isUsuarioLogado(props.row.id) ? 'row-bloqueada' : ''">
+          <q-tr :props="props" :class="isUsuarioLogado(props.row.id) ? 'row-logado' : ''">
             <q-td v-for="col in props.cols" :key="col.name" :props="props">
-              <template v-if="col.name === 'role'">
+              <template v-if="col.name === 'nome'">
+                <div :class="isUsuarioLogado(props.row.id) ? 'nome-logado' : ''">
+                  {{ col.value }}
+                </div>
+              </template>
+              <template v-else-if="col.name === 'role'">
                 <q-badge :color="props.row.role === 'admin' ? 'purple' : 'blue'">
                   {{ props.row.role === 'admin' ? 'Administrador' : 'Usuário' }}
                 </q-badge>
@@ -51,15 +59,8 @@
                 </q-badge>
               </template>
               <template v-else-if="col.name === 'acoes'">
-                <q-btn
-                  icon="edit"
-                  flat
-                  round
-                  :color="isUsuarioLogado(props.row.id) ? 'grey' : 'primary'"
-                  :disable="isUsuarioLogado(props.row.id)"
-                  @click="editarUsuario(props.row.id)"
-                >
-                  <q-tooltip>{{ isUsuarioLogado(props.row.id) ? 'Não pode editar seu próprio perfil' : 'Editar' }}</q-tooltip>
+                <q-btn icon="edit" flat round color="primary" @click="editarUsuario(props.row.id)">
+                  <q-tooltip>Editar</q-tooltip>
                 </q-btn>
                 <q-btn
                   icon="delete"
@@ -69,7 +70,11 @@
                   :disable="isUsuarioLogado(props.row.id)"
                   @click.stop="excluir(props.row.id)"
                 >
-                  <q-tooltip>{{ isUsuarioLogado(props.row.id) ? 'Não pode excluir seu próprio perfil' : 'Excluir' }}</q-tooltip>
+                  <q-tooltip>{{
+                    isUsuarioLogado(props.row.id)
+                      ? 'Não pode excluir seu próprio perfil'
+                      : 'Excluir'
+                  }}</q-tooltip>
                 </q-btn>
               </template>
               <template v-else>
@@ -80,6 +85,36 @@
         </template>
       </q-table>
     </q-card>
+
+    <!-- Dialog de Filtros -->
+    <q-dialog v-model="dialogFiltros">
+      <q-card style="min-width: 400px">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-h6">Filtros</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section>
+          <q-input v-model="filtro.nome" label="Nome" outlined dense class="q-mb-md" />
+          <q-input v-model="filtro.email" label="E-mail" outlined dense class="q-mb-md" />
+          <q-input v-model="filtro.username" label="Usuário" outlined dense class="q-mb-md" />
+          <q-select
+            v-model="filtro.status"
+            :options="['Ativo', 'Inativo']"
+            label="Status"
+            outlined
+            dense
+            clearable
+          />
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn label="Limpar" flat color="grey" @click="limparFiltros" />
+          <q-btn label="Aplicar" color="primary" @click="dialogFiltros = false" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -94,12 +129,13 @@ import { getErrorMessage } from '../../utils/errorHandler'
 const $q = useQuasar()
 const router = useRouter()
 const loading = ref(false)
+const dialogFiltros = ref(false)
 
 const filtro = ref({
   nome: '',
   email: '',
   username: '',
-  status: ''
+  status: '',
 })
 
 function limparFiltros() {
@@ -107,34 +143,38 @@ function limparFiltros() {
     nome: '',
     email: '',
     username: '',
-    status: ''
+    status: '',
   }
 }
 
 const usuariosFiltrados = computed(() => {
   let resultado = usuarios.value
-  
+
   if (filtro.value.nome) {
     const needle = filtro.value.nome.toLowerCase()
-    resultado = resultado.filter(u => u.nome?.toLowerCase().includes(needle))
+    resultado = resultado.filter((u) => u.nome?.toLowerCase().includes(needle))
   }
-  
+
   if (filtro.value.email) {
     const needle = filtro.value.email.toLowerCase()
-    resultado = resultado.filter(u => u.email?.toLowerCase().includes(needle))
+    resultado = resultado.filter((u) => u.email?.toLowerCase().includes(needle))
   }
-  
+
   if (filtro.value.username) {
     const needle = filtro.value.username.toLowerCase()
-    resultado = resultado.filter(u => u.username?.toLowerCase().includes(needle))
+    resultado = resultado.filter((u) => u.username?.toLowerCase().includes(needle))
   }
-  
+
   if (filtro.value.status) {
     const statusFiltro = filtro.value.status === 'Ativo' ? 'ativo' : 'inativo'
-    resultado = resultado.filter(u => u.status === statusFiltro)
+    resultado = resultado.filter((u) => u.status === statusFiltro)
   }
-  
+
   return resultado
+})
+
+const temFiltrosAtivos = computed(() => {
+  return !!(filtro.value.nome || filtro.value.email || filtro.value.username || filtro.value.status)
 })
 
 function voltarSeguro() {
@@ -151,6 +191,11 @@ const columns = [
 ]
 
 const usuarios = ref([])
+const pagination = ref({
+  page: 1,
+  rowsPerPage: 10,
+  rowsNumber: 0,
+})
 
 function isUsuarioLogado(id) {
   const userLogado = authService.getUser()
@@ -160,7 +205,12 @@ function isUsuarioLogado(id) {
 async function carregar() {
   loading.value = true
   try {
-    usuarios.value = await usuarioService.listar()
+    const response = await usuarioService.listar(
+      pagination.value.page,
+      pagination.value.rowsPerPage,
+    )
+    usuarios.value = response.data
+    pagination.value.rowsNumber = response.total
   } catch (error) {
     $q.notify({ type: 'negative', message: getErrorMessage(error) })
   } finally {
@@ -168,12 +218,13 @@ async function carregar() {
   }
 }
 
+function onRequest(props) {
+  pagination.value.page = props.pagination.page
+  pagination.value.rowsPerPage = props.pagination.rowsPerPage
+  carregar()
+}
+
 function editarUsuario(id) {
-  const userLogado = authService.getUser()
-  if (userLogado && userLogado.id === id) {
-    $q.notify({ type: 'warning', message: 'Você não pode editar seu próprio perfil' })
-    return
-  }
   router.push(`/usuarios/cadastro/${id}`)
 }
 
@@ -210,12 +261,12 @@ onMounted(() => {
   transform: translateY(-2px);
 }
 
-.row-bloqueada {
-  opacity: 0.5;
-  background-color: rgba(0, 0, 0, 0.05);
+.row-logado {
+  border-left: 4px solid #103dc3;
 }
 
-body.body--dark .row-bloqueada {
-  background-color: rgba(255, 255, 255, 0.05);
+.nome-logado {
+  font-weight: bold;
+  color: #103dc3;
 }
 </style>

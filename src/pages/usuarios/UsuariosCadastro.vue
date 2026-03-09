@@ -59,6 +59,36 @@
             false-value="inativo"
           />
         </div>
+
+        <!-- Campos adicionais para role 'user' -->
+        <template v-if="form.role === 'user'">
+          <div class="col-12">
+            <q-separator class="q-my-md" />
+            <div class="text-subtitle1 text-weight-bold q-mb-md">Informações da Oficina</div>
+          </div>
+
+          <div class="col-12 col-md-4">
+            <q-input v-model="form.oficina_nome" label="Nome da Oficina *" outlined dense />
+          </div>
+
+          <div class="col-12 col-md-4">
+            <q-input
+              v-model="form.oficina_telefone"
+              label="Telefone da Oficina *"
+              outlined
+              dense
+              mask="(##) #####-####"
+            />
+          </div>
+
+          <div class="col-12 col-md-4">
+            <q-input v-model="form.mecanico_nome" label="Nome do Mecânico *" outlined dense />
+          </div>
+
+          <div class="col-12">
+            <q-input v-model="form.oficina_endereco" label="Endereço da Oficina *" outlined dense />
+          </div>
+        </template>
       </div>
 
       <div class="q-mt-md text-right">
@@ -93,6 +123,10 @@ const form = ref({
   password: '',
   role: 'user',
   is_active: 'ativo',
+  oficina_nome: '',
+  oficina_telefone: '',
+  oficina_endereco: '',
+  mecanico_nome: ''
 })
 
 function voltarSeguro() {
@@ -110,6 +144,11 @@ async function salvar() {
     return
   }
 
+  if (form.value.role === 'user' && (!form.value.oficina_nome || !form.value.oficina_telefone || !form.value.oficina_endereco || !form.value.mecanico_nome)) {
+    $q.notify({ type: 'negative', message: 'Preencha as informações da oficina' })
+    return
+  }
+
   salvando.value = true
 
   try {
@@ -120,6 +159,12 @@ async function salvar() {
         email: form.value.email,
         status: form.value.is_active,
         role: form.value.role,
+      }
+      if (form.value.role === 'user') {
+        payload.oficina_nome = form.value.oficina_nome
+        payload.oficina_telefone = form.value.oficina_telefone
+        payload.oficina_endereco = form.value.oficina_endereco
+        payload.mecanico_nome = form.value.mecanico_nome
       }
       await usuarioService.atualizar(route.params.id, payload)
       $q.notify({ type: 'positive', message: 'Usuário atualizado com sucesso!' })
@@ -132,6 +177,12 @@ async function salvar() {
         senha: form.value.password,
         role: form.value.role,
         status: form.value.is_active,
+      }
+      if (form.value.role === 'user') {
+        payload.oficina_nome = form.value.oficina_nome
+        payload.oficina_telefone = form.value.oficina_telefone
+        payload.oficina_endereco = form.value.oficina_endereco
+        payload.mecanico_nome = form.value.mecanico_nome
       }
       await usuarioService.criar(payload)
       $q.notify({ type: 'positive', message: 'Usuário cadastrado com sucesso!' })
@@ -155,6 +206,10 @@ onMounted(async () => {
         password: '',
         role: usuario.role,
         is_active: usuario.status || 'ativo',
+        oficina_nome: usuario.oficina_nome || '',
+        oficina_telefone: usuario.oficina_telefone || '',
+        oficina_endereco: usuario.oficina_endereco || '',
+        mecanico_nome: usuario.mecanico_nome || ''
       }
     } catch (error) {
       $q.notify({ type: 'negative', message: getErrorMessage(error) })

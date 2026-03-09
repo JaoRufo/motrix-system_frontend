@@ -1,8 +1,8 @@
 import { http } from '../utils/http'
 
 export const usuarioService = {
-  async listar() {
-    return await http.get('/usuarios')
+  async listar(page = 1, limit = 10) {
+    return await http.get(`/usuarios?page=${page}&limit=${limit}`)
   },
 
   async buscarPorId(id) {

@@ -16,27 +16,30 @@
     </div>
 
     <q-card flat bordered>
-      <q-card-section>
-        <div class="row q-col-gutter-md q-mb-md">
-          <div class="col-12 col-md-3">
-            <q-input v-model="filtro.nome" label="Nome" outlined dense clearable />
-          </div>
-          <div class="col-12 col-md-3">
-            <q-input v-model="filtro.cpf" label="CPF" outlined dense clearable />
-          </div>
-          <div class="col-12 col-md-2">
-            <q-input v-model="filtro.placa" label="Placa" outlined dense clearable />
-          </div>
-          <div class="col-12 col-md-2">
-            <q-input v-model="filtro.email" label="E-mail" outlined dense clearable />
-          </div>
-          <div class="col-12 col-md-2 flex items-center">
-            <q-btn label="Limpar" flat color="grey" @click="limparFiltros" />
-          </div>
-        </div>
+      <q-card-section class="row items-center">
+        <q-btn
+          label="Filtros"
+          icon="filter_list"
+          color="primary"
+          outline
+          @click="dialogFiltros = true"
+        />
+        <q-space />
+        <q-chip v-if="temFiltrosAtivos" color="primary" text-color="white" icon="filter_alt">
+          Filtros ativos
+        </q-chip>
       </q-card-section>
 
-      <q-table :rows="clientesFiltrados" :columns="columns" row-key="id" flat :loading="loading">
+      <q-table
+        :rows="clientesFiltrados"
+        :columns="columns"
+        row-key="id"
+        flat
+        :loading="loading"
+        v-model:pagination="pagination"
+        @request="onRequest"
+        :rows-per-page-options="[10, 25, 50]"
+      >
         <template v-slot:body-cell-veiculos="props">
           <q-td>
             <div v-for="(veiculo, idx) in props.row.veiculos" :key="idx">
@@ -75,6 +78,29 @@
       </q-table>
     </q-card>
 
+    <!-- Dialog de Filtros -->
+    <q-dialog v-model="dialogFiltros">
+      <q-card style="min-width: 400px">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-h6">Filtros</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section>
+          <q-input v-model="filtro.nome" label="Nome" outlined dense class="q-mb-md" />
+          <q-input v-model="filtro.cpf" label="CPF" outlined dense class="q-mb-md" />
+          <q-input v-model="filtro.placa" label="Placa" outlined dense class="q-mb-md" />
+          <q-input v-model="filtro.email" label="E-mail" outlined dense />
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn label="Limpar" flat color="grey" @click="limparFiltros" />
+          <q-btn label="Aplicar" color="primary" @click="dialogFiltros = false" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <!-- Dialog de Histórico -->
     <q-dialog v-model="dialogHistorico" maximized>
       <q-card v-if="clienteSelecionado">
@@ -100,6 +126,23 @@
                 :caption="`${new Date(ordem.data).toLocaleDateString()} - ${ordem.status}`"
                 expand-separator
               >
+                <template v-slot:header>
+                  <q-item-section>
+                    <q-item-label>O.S #{{ ordem.id }} - {{ ordem.veiculo }}</q-item-label>
+                    <q-item-label caption>{{ new Date(ordem.data).toLocaleDateString() }} - {{ ordem.status }}</q-item-label>
+                  </q-item-section>
+                  <q-item-section side>
+                    <q-btn
+                      icon="picture_as_pdf"
+                      flat
+                      round
+                      color="red"
+                      @click.stop="baixarPDF(ordem.id)"
+                    >
+                      <q-tooltip>Baixar PDF</q-tooltip>
+                    </q-btn>
+                  </q-item-section>
+                </template>
                 <q-card>
                   <q-card-section>
                     <div class="row q-col-gutter-md">
@@ -116,6 +159,16 @@
                       <div class="col-12 col-md-4">
                         <div class="text-subtitle2 text-grey">Status</div>
                         <q-badge :color="getStatusColor(ordem.status)" :label="ordem.status" />
+                      </div>
+
+                      <div v-if="ordem.oficina" class="col-12 col-md-6">
+                        <div class="text-subtitle2 text-grey">Oficina</div>
+                        <div class="text-body1">{{ ordem.oficina }}</div>
+                      </div>
+
+                      <div v-if="ordem.mecanico" class="col-12 col-md-6">
+                        <div class="text-subtitle2 text-grey">Mecânico</div>
+                        <div class="text-body1">{{ ordem.mecanico }}</div>
                       </div>
 
                       <div class="col-12">
@@ -178,10 +231,12 @@ import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { clienteService } from 'src/services/clienteService'
 import { ordemService } from 'src/services/ordemService'
+import { oficinaService } from 'src/services/oficinaService'
 
 const $q = useQuasar()
 const router = useRouter()
 
+const dialogFiltros = ref(false)
 const filtro = ref({
   nome: '',
   cpf: '',
@@ -226,6 +281,10 @@ const clientesFiltrados = computed(() => {
   return resultado
 })
 
+const temFiltrosAtivos = computed(() => {
+  return !!(filtro.value.nome || filtro.value.cpf || filtro.value.placa || filtro.value.email)
+})
+
 function voltarSeguro() {
   router.push('/ordens')
 }
@@ -239,6 +298,11 @@ const columns = [
 ]
 
 const clientes = ref([])
+const pagination = ref({
+  page: 1,
+  rowsPerPage: 10,
+  rowsNumber: 0
+})
 const dialogHistorico = ref(false)
 const clienteSelecionado = ref(null)
 const historicoOrdens = ref([])
@@ -259,7 +323,9 @@ function getStatusColor(status) {
 async function carregar() {
   loading.value = true
   try {
-    clientes.value = await clienteService.listar()
+    const response = await clienteService.listar(pagination.value.page, pagination.value.rowsPerPage)
+    clientes.value = response.data
+    pagination.value.rowsNumber = response.total
   } catch {
     $q.notify({ type: 'negative', message: 'Erro ao carregar clientes' })
   } finally {
@@ -267,15 +333,23 @@ async function carregar() {
   }
 }
 
+function onRequest(props) {
+  pagination.value.page = props.pagination.page
+  pagination.value.rowsPerPage = props.pagination.rowsPerPage
+  carregar()
+}
+
 async function verHistorico(cliente) {
   clienteSelecionado.value = cliente
   try {
     const historico = await clienteService.buscarHistorico(cliente.id)
+    const usuarios = await oficinaService.buscarMecanicos()
     
     const ordensCompletas = await Promise.all(
       historico.map(async (ordem) => {
         try {
           const ordemCompleta = await ordemService.buscarPorId(ordem.id)
+          const mecanico = usuarios.find(u => u.id === ordemCompleta.mecanico_id)
           return {
             id: ordemCompleta.id,
             veiculo: ordem.modelo ? `${ordem.modelo} - ${ordem.placa}` : ordem.veiculo_placa || 'N/A',
@@ -287,7 +361,9 @@ async function verHistorico(cliente) {
             data: ordemCompleta.created_at || ordemCompleta.data,
             total: parseFloat(ordemCompleta.total) || 0,
             pecas: (ordemCompleta.pecas || []).map(p => ({ ...p, valor: parseFloat(p.valor || 0) })),
-            maoObra: (ordemCompleta.maoObra || ordemCompleta.mao_obra || []).map(m => ({ ...m, valor: parseFloat(m.valor || 0) }))
+            maoObra: (ordemCompleta.maoObra || ordemCompleta.mao_obra || []).map(m => ({ ...m, valor: parseFloat(m.valor || 0) })),
+            oficina: mecanico?.oficina_nome || null,
+            mecanico: mecanico?.mecanico_nome || null
           }
         } catch {
           return {
@@ -301,7 +377,9 @@ async function verHistorico(cliente) {
             data: ordem.created_at || ordem.data,
             total: parseFloat(ordem.total) || 0,
             pecas: [],
-            maoObra: []
+            maoObra: [],
+            oficina: null,
+            mecanico: null
           }
         }
       })
@@ -311,6 +389,15 @@ async function verHistorico(cliente) {
     dialogHistorico.value = true
   } catch {
     $q.notify({ type: 'negative', message: 'Erro ao carregar histórico' })
+  }
+}
+
+async function baixarPDF(ordemId) {
+  try {
+    await ordemService.baixarPDF(ordemId)
+    $q.notify({ type: 'positive', message: 'PDF baixado com sucesso!' })
+  } catch {
+    $q.notify({ type: 'negative', message: 'Erro ao baixar PDF' })
   }
 }
 

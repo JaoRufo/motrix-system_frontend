@@ -83,6 +83,20 @@
             dense
             option-label="nome"
             option-value="id"
+            @update:model-value="selecionarOficina"
+          />
+        </div>
+
+        <div class="col-12 col-md-3">
+          <q-select
+            v-model="mecanicoSelecionado"
+            :options="mecanicosOptions"
+            label="Mecânico *"
+            outlined
+            dense
+            option-label="nome"
+            option-value="id"
+            :disable="!oficinaSelecionada"
           />
         </div>
 
@@ -116,6 +130,8 @@
             dense
             type="textarea"
             rows="2"
+            class="input-cancelamento"
+            color="negative"
           />
         </div>
       </div>
@@ -212,6 +228,7 @@ function voltarSeguro() {
 const clienteSelecionado = ref(null)
 const veiculoSelecionado = ref(null)
 const oficinaSelecionada = ref(null)
+const mecanicoSelecionado = ref(null)
 const kmAtual = ref(0)
 const status = ref('Aberta')
 const descricaoProblema = ref('')
@@ -223,6 +240,8 @@ const clientesOptions = ref([])
 const todosClientes = ref([])
 const veiculosOptions = ref([])
 const oficinasOptions = ref([])
+const mecanicosOptions = ref([])
+const todosUsuarios = ref([])
 const salvando = ref(false)
 
 const statusOptions = ['Aberta', 'Em Andamento', 'Aguardando Orçamento', 'Finalizada', 'Cancelada']
@@ -282,6 +301,21 @@ function selecionarVeiculo(veiculo) {
   }
 }
 
+function selecionarOficina(oficina) {
+  mecanicoSelecionado.value = null
+  if (oficina) {
+    mecanicosOptions.value = todosUsuarios.value
+      .filter((u) => u.oficina_nome === oficina.nome && u.role === 'user')
+      .map((u) => ({
+        id: u.id,
+        nome: u.mecanico_nome,
+        mecanico_id: u.mecanico_id,
+      }))
+  } else {
+    mecanicosOptions.value = []
+  }
+}
+
 function adicionarPeca() {
   pecas.value.push({ nome: '', valor: 0 })
 }
@@ -324,6 +358,11 @@ async function salvar() {
     return
   }
 
+  if (!mecanicoSelecionado.value) {
+    $q.notify({ type: 'negative', message: 'Selecione um mecânico' })
+    return
+  }
+
   if (!kmAtual.value || kmAtual.value <= 0) {
     $q.notify({ type: 'negative', message: 'Informe a quilometragem atual' })
     return
@@ -342,6 +381,15 @@ async function salvar() {
   salvando.value = true
 
   try {
+    await clienteService.atualizar(clienteSelecionado.value.id, {
+      veiculos: [
+        {
+          id: veiculoSelecionado.value.value.id,
+          km_atual: kmAtual.value,
+        },
+      ],
+    })
+
     const payload = {
       ordem: {
         cliente_id: clienteSelecionado.value.id,
@@ -353,6 +401,7 @@ async function salvar() {
         observacoes: observacoes.value || null,
         motivo_cancelamento: status.value === 'Cancelada' ? motivoCancelamento.value : null,
         oficina_id: oficinaSelecionada.value?.id || null,
+        mecanico_id: mecanicoSelecionado.value?.id || null,
       },
       pecas: pecas.value
         .filter((p) => p.nome)
@@ -386,7 +435,24 @@ async function salvar() {
 
 onMounted(async () => {
   try {
-    const clientes = await clienteService.listar()
+    const mecanicos = await oficinaService.buscarMecanicos()
+    todosUsuarios.value = mecanicos
+
+    const oficinasUnicas = [
+      ...new Set(
+        todosUsuarios.value
+          .filter((u) => u.role === 'user' && u.oficina_nome)
+          .map((u) => u.oficina_nome),
+      ),
+    ]
+
+    oficinasOptions.value = oficinasUnicas.map((nome, index) => ({
+      id: index + 1,
+      nome: nome,
+    }))
+
+    const response = await clienteService.listar(1, 1000)
+    const clientes = response.data || response
     todosClientes.value = clientes.map((c) => ({
       ...c,
       label: c.nome,
@@ -401,27 +467,35 @@ onMounted(async () => {
     }))
     clientesOptions.value = todosClientes.value
 
-    const oficinas = await oficinaService.buscar()
-    oficinasOptions.value = Array.isArray(oficinas) ? oficinas : [oficinas]
-
     if (isEdit.value) {
       const ordem = await ordemService.buscarPorId(route.params.id)
+
+      if (ordem.mecanico_id) {
+        const usuario = todosUsuarios.value.find((u) => u.id === ordem.mecanico_id)
+        if (usuario) {
+          oficinaSelecionada.value = oficinasOptions.value.find(
+            (o) => o.nome === usuario.oficina_nome,
+          )
+          if (oficinaSelecionada.value) {
+            selecionarOficina(oficinaSelecionada.value)
+            mecanicoSelecionado.value = mecanicosOptions.value.find(
+              (m) => m.id === ordem.mecanico_id,
+            )
+          }
+        }
+      }
 
       const cliente = todosClientes.value.find((c) => c.id == ordem.cliente_id)
       if (cliente) {
         clienteSelecionado.value = cliente
         selecionarCliente(cliente)
 
-        await new Promise(resolve => setTimeout(resolve, 100))
-        
+        await new Promise((resolve) => setTimeout(resolve, 100))
+
         const veiculo = veiculosOptions.value.find((v) => v.value.id === ordem.veiculo_id)
         if (veiculo) {
           veiculoSelecionado.value = veiculo
         }
-      }
-
-      if (ordem.oficina_id) {
-        oficinaSelecionada.value = oficinasOptions.value.find((o) => o.id === ordem.oficina_id) || null
       }
 
       kmAtual.value = ordem.km_atual || 0
@@ -453,5 +527,15 @@ onMounted(async () => {
 .btn-save:hover {
   box-shadow: 0 6px 16px rgba(255, 107, 53, 0.4);
   transform: translateY(-2px);
+}
+
+.input-cancelamento :deep(.q-field__control) {
+  border: 2px solid #c10015 !important;
+  border-radius: 4px;
+}
+
+.input-cancelamento :deep(.q-field__label) {
+  color: #c10015;
+  font-weight: bold;
 }
 </style>

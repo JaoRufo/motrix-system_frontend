@@ -5,6 +5,10 @@
 
       <q-space />
 
+      <div v-if="oficinaUsuario" class="text-subtitle2 q-mr-md text-primary text-weight-bold">
+        Oficina: {{ oficinaUsuario }}
+      </div>
+
       <div class="text-subtitle2 q-mr-md">{{ saudacao }} {{ nomeUsuario }}</div>
 
       <!-- Dark Mode Toggle -->
@@ -25,13 +29,15 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { authService } from '../../services/authService'
+import { oficinaService } from '../../services/oficinaService'
 
 const $q = useQuasar()
 const router = useRouter()
+const oficinaUsuario = ref(null)
 
 const headerClass = computed(() => {
   return $q.dark.isActive ? 'bg-dark text-white' : 'bg-white text-dark'
@@ -49,6 +55,21 @@ const nomeUsuario = computed(() => {
   return user?.username || user?.nome || 'Usuário'
 })
 
+async function carregarOficina() {
+  const user = authService.getUser()
+  if (user?.role === 'user' && user?.id) {
+    try {
+      const mecanicos = await oficinaService.buscarMecanicos()
+      const mecanicoLogado = mecanicos.find(m => m.id === user.id)
+      if (mecanicoLogado?.oficina_nome) {
+        oficinaUsuario.value = mecanicoLogado.oficina_nome
+      }
+    } catch (error) {
+      console.error('Erro ao carregar oficina:', error)
+    }
+  }
+}
+
 function toggleDark() {
   const newValue = !$q.dark.isActive
   $q.dark.set(newValue)
@@ -65,5 +86,6 @@ onMounted(() => {
   if (savedDarkMode !== null) {
     $q.dark.set(savedDarkMode === 'true')
   }
+  carregarOficina()
 })
 </script>
