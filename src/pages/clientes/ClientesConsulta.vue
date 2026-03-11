@@ -31,7 +31,7 @@
       </q-card-section>
 
       <q-table
-        :rows="clientesFiltrados"
+        :rows="clientes"
         :columns="columns"
         row-key="id"
         flat
@@ -88,10 +88,14 @@
         </q-card-section>
 
         <q-card-section>
-          <q-input v-model="filtro.nome" label="Nome" outlined dense class="q-mb-md" />
-          <q-input v-model="filtro.cpf" label="CPF" outlined dense class="q-mb-md" />
-          <q-input v-model="filtro.placa" label="Placa" outlined dense class="q-mb-md" />
-          <q-input v-model="filtro.email" label="E-mail" outlined dense />
+          <div v-if="!temCamposFiltro" class="text-center text-grey q-pa-md">
+            Nenhum campo de filtro disponível
+          </div>
+          <div v-else>
+            <q-input v-model="filtro.nome" label="Nome" outlined dense class="q-mb-md" />
+            <q-input v-model="filtro.cpf" label="CPF" outlined dense class="q-mb-md" />
+            <q-input v-model="filtro.placa" label="Placa" outlined dense />
+          </div>
         </q-card-section>
 
         <q-card-actions align="right">
@@ -226,7 +230,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { clienteService } from 'src/services/clienteService'
@@ -240,21 +244,19 @@ const dialogFiltros = ref(false)
 const filtro = ref({
   nome: '',
   cpf: '',
-  placa: '',
-  email: ''
+  placa: ''
 })
 
 function limparFiltros() {
   filtro.value = {
     nome: '',
     cpf: '',
-    placa: '',
-    email: ''
+    placa: ''
   }
 }
 
 const clientesFiltrados = computed(() => {
-  let resultado = clientes.value
+  let resultado = todosClientes.value
   
   if (filtro.value.nome) {
     const needle = filtro.value.nome.toLowerCase()
@@ -273,16 +275,17 @@ const clientesFiltrados = computed(() => {
     )
   }
   
-  if (filtro.value.email) {
-    const needle = filtro.value.email.toLowerCase()
-    resultado = resultado.filter(c => c.email?.toLowerCase().includes(needle))
-  }
-  
   return resultado
 })
 
+const totalClientesFiltrado = computed(() => clientesFiltrados.value.length)
+
 const temFiltrosAtivos = computed(() => {
-  return !!(filtro.value.nome || filtro.value.cpf || filtro.value.placa || filtro.value.email)
+  return !!(filtro.value.nome || filtro.value.cpf || filtro.value.placa)
+})
+
+const temCamposFiltro = computed(() => {
+  return true
 })
 
 function voltarSeguro() {
@@ -298,6 +301,7 @@ const columns = [
 ]
 
 const clientes = ref([])
+const todosClientes = ref([])
 const pagination = ref({
   page: 1,
   rowsPerPage: 10,
@@ -323,9 +327,9 @@ function getStatusColor(status) {
 async function carregar() {
   loading.value = true
   try {
-    const response = await clienteService.listar(pagination.value.page, pagination.value.rowsPerPage)
-    clientes.value = response.data
-    pagination.value.rowsNumber = response.total
+    const response = await clienteService.listar(1, 9999)
+    todosClientes.value = response.data
+    atualizarPaginacao()
   } catch {
     $q.notify({ type: 'negative', message: 'Erro ao carregar clientes' })
   } finally {
@@ -333,10 +337,18 @@ async function carregar() {
   }
 }
 
+function atualizarPaginacao() {
+  const filtered = clientesFiltrados.value
+  const startIndex = (pagination.value.page - 1) * pagination.value.rowsPerPage
+  const endIndex = startIndex + pagination.value.rowsPerPage
+  clientes.value = filtered.slice(startIndex, endIndex)
+  pagination.value.rowsNumber = filtered.length
+}
+
 function onRequest(props) {
   pagination.value.page = props.pagination.page
   pagination.value.rowsPerPage = props.pagination.rowsPerPage
-  carregar()
+  atualizarPaginacao()
 }
 
 async function verHistorico(cliente) {
@@ -427,6 +439,11 @@ function excluir(id) {
 onMounted(() => {
   carregar()
 })
+
+watch([totalClientesFiltrado, () => filtro.value], () => {
+  pagination.value.page = 1
+  atualizarPaginacao()
+}, { deep: true })
 </script>
 
 <style scoped>

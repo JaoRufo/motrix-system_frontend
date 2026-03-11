@@ -31,7 +31,7 @@
       </q-card-section>
 
       <q-table
-        :rows="usuariosFiltrados"
+        :rows="usuarios"
         :columns="columns"
         row-key="id"
         flat
@@ -96,17 +96,22 @@
         </q-card-section>
 
         <q-card-section>
-          <q-input v-model="filtro.nome" label="Nome" outlined dense class="q-mb-md" />
-          <q-input v-model="filtro.email" label="E-mail" outlined dense class="q-mb-md" />
-          <q-input v-model="filtro.username" label="Usuário" outlined dense class="q-mb-md" />
-          <q-select
-            v-model="filtro.status"
-            :options="['Ativo', 'Inativo']"
-            label="Status"
-            outlined
-            dense
-            clearable
-          />
+          <div v-if="!temCamposFiltro" class="text-center text-grey q-pa-md">
+            Nenhum campo de filtro disponível
+          </div>
+          <div v-else>
+            <q-input v-model="filtro.nome" label="Nome" outlined dense class="q-mb-md" />
+            <q-input v-model="filtro.email" label="E-mail" outlined dense class="q-mb-md" />
+            <q-input v-model="filtro.username" label="Usuário" outlined dense class="q-mb-md" />
+            <q-select
+              v-model="filtro.status"
+              :options="['Ativo', 'Inativo']"
+              label="Status"
+              outlined
+              dense
+              clearable
+            />
+          </div>
         </q-card-section>
 
         <q-card-actions align="right">
@@ -119,7 +124,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { usuarioService } from '../../services/usuarioService'
@@ -148,7 +153,7 @@ function limparFiltros() {
 }
 
 const usuariosFiltrados = computed(() => {
-  let resultado = usuarios.value
+  let resultado = todosUsuarios.value
 
   if (filtro.value.nome) {
     const needle = filtro.value.nome.toLowerCase()
@@ -173,8 +178,14 @@ const usuariosFiltrados = computed(() => {
   return resultado
 })
 
+const totalUsuariosFiltrado = computed(() => usuariosFiltrados.value.length)
+
 const temFiltrosAtivos = computed(() => {
   return !!(filtro.value.nome || filtro.value.email || filtro.value.username || filtro.value.status)
+})
+
+const temCamposFiltro = computed(() => {
+  return true
 })
 
 function voltarSeguro() {
@@ -191,6 +202,7 @@ const columns = [
 ]
 
 const usuarios = ref([])
+const todosUsuarios = ref([])
 const pagination = ref({
   page: 1,
   rowsPerPage: 10,
@@ -205,12 +217,9 @@ function isUsuarioLogado(id) {
 async function carregar() {
   loading.value = true
   try {
-    const response = await usuarioService.listar(
-      pagination.value.page,
-      pagination.value.rowsPerPage,
-    )
-    usuarios.value = response.data
-    pagination.value.rowsNumber = response.total
+    const response = await usuarioService.listar(1, 9999)
+    todosUsuarios.value = response.data
+    atualizarPaginacao()
   } catch (error) {
     $q.notify({ type: 'negative', message: getErrorMessage(error) })
   } finally {
@@ -218,10 +227,18 @@ async function carregar() {
   }
 }
 
+function atualizarPaginacao() {
+  const filtered = usuariosFiltrados.value
+  const startIndex = (pagination.value.page - 1) * pagination.value.rowsPerPage
+  const endIndex = startIndex + pagination.value.rowsPerPage
+  usuarios.value = filtered.slice(startIndex, endIndex)
+  pagination.value.rowsNumber = filtered.length
+}
+
 function onRequest(props) {
   pagination.value.page = props.pagination.page
   pagination.value.rowsPerPage = props.pagination.rowsPerPage
-  carregar()
+  atualizarPaginacao()
 }
 
 function editarUsuario(id) {
@@ -248,6 +265,11 @@ function excluir(id) {
 onMounted(() => {
   carregar()
 })
+
+watch([totalUsuariosFiltrado, () => filtro.value], () => {
+  pagination.value.page = 1
+  atualizarPaginacao()
+}, { deep: true })
 </script>
 
 <style scoped>

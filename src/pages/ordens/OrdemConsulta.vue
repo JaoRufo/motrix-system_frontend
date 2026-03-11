@@ -22,7 +22,7 @@
       </q-card-section>
 
       <q-table
-        :rows="ordensFiltradas"
+        :rows="ordens"
         :columns="columns"
         row-key="id"
         flat
@@ -74,17 +74,28 @@
         </q-card-section>
 
         <q-card-section>
-          <q-input v-model="filtro.cliente" label="Cliente" outlined dense class="q-mb-md" />
-          <q-input v-model="filtro.placa" label="Placa" outlined dense class="q-mb-md" />
-          <q-input v-model="filtro.id" label="Nº O.S" outlined dense type="number" class="q-mb-md" />
-          <q-select
-            v-model="filtro.status"
-            :options="statusOptions"
-            label="Status"
-            outlined
-            dense
-            clearable
-          />
+          <div v-if="!temCamposFiltro" class="text-center text-grey q-pa-md">
+            Nenhum campo de filtro disponível
+          </div>
+          <div v-else>
+            <q-input v-model="filtro.placa" label="Placa" outlined dense class="q-mb-md" />
+            <q-input
+              v-model="filtro.id"
+              label="Nº O.S"
+              outlined
+              dense
+              type="number"
+              class="q-mb-md"
+            />
+            <q-select
+              v-model="filtro.status"
+              :options="statusOptions"
+              label="Status"
+              outlined
+              dense
+              clearable
+            />
+          </div>
         </q-card-section>
 
         <q-card-actions align="right">
@@ -231,7 +242,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { ordemService } from '../../services/ordemService'
@@ -243,7 +254,6 @@ const router = useRouter()
 
 const dialogFiltros = ref(false)
 const filtro = ref({
-  cliente: '',
   placa: '',
   id: '',
   status: '',
@@ -253,7 +263,6 @@ const statusOptions = ['Aberta', 'Em Andamento', 'Aguardando Orçamento', 'Final
 
 function limparFiltros() {
   filtro.value = {
-    cliente: '',
     placa: '',
     id: '',
     status: '',
@@ -261,12 +270,7 @@ function limparFiltros() {
 }
 
 const ordensFiltradas = computed(() => {
-  let resultado = ordens.value
-
-  if (filtro.value.cliente) {
-    const needle = filtro.value.cliente.toLowerCase()
-    resultado = resultado.filter((o) => o.cliente?.toLowerCase().includes(needle))
-  }
+  let resultado = todasOrdens.value
 
   if (filtro.value.placa) {
     const needle = filtro.value.placa.toLowerCase()
@@ -278,19 +282,26 @@ const ordensFiltradas = computed(() => {
   }
 
   if (filtro.value.status) {
-    resultado = resultado.filter((o) => o.status === filtro.value.status)
+    const needle = filtro.value.status.toLowerCase()
+    resultado = resultado.filter((o) => o.status?.toLowerCase() === needle)
   }
 
   return resultado
 })
 
+const totalFiltrado = computed(() => ordensFiltradas.value.length)
+
 const temFiltrosAtivos = computed(() => {
-  return !!(filtro.value.cliente || filtro.value.placa || filtro.value.id || filtro.value.status)
+  return !!(filtro.value.placa || filtro.value.id || filtro.value.status)
+})
+
+const temCamposFiltro = computed(() => {
+  return true
 })
 
 const columns = [
   { name: 'id', label: 'O.S', field: 'id', align: 'left' },
-  { name: 'veiculo', label: 'Veículo', field: 'veiculo', align: 'left' },
+  { name: 'veiculo', label: 'Placa', field: 'veiculo', align: 'left' },
   { name: 'kmAtual', label: 'KM', field: 'kmAtual', align: 'left' },
   { name: 'status', label: 'Status', field: 'status', align: 'left' },
   {
@@ -304,10 +315,11 @@ const columns = [
 ]
 
 const ordens = ref([])
+const todasOrdens = ref([])
 const pagination = ref({
   page: 1,
   rowsPerPage: 10,
-  rowsNumber: 0
+  rowsNumber: 0,
 })
 const dialogDetalhes = ref(false)
 const ordemSelecionada = ref(null)
@@ -328,8 +340,8 @@ function getStatusColor(status) {
 async function carregar() {
   loading.value = true
   try {
-    const response = await ordemService.listar(pagination.value.page, pagination.value.rowsPerPage)
-    ordens.value = response.data.map((ordem) => {
+    const response = await ordemService.listar(1, 9999)
+    todasOrdens.value = response.data.map((ordem) => {
       const clienteNome = ordem.cliente?.nome || ordem.cliente_nome || 'N/A'
       const oficinaNome = ordem.oficina?.nome || null
 
@@ -354,7 +366,7 @@ async function carregar() {
         oficina: oficinaNome ? { nome: oficinaNome } : null,
       }
     })
-    pagination.value.rowsNumber = response.total
+    atualizarPaginacao()
   } catch {
     $q.notify({ type: 'negative', message: 'Erro ao carregar ordens' })
   } finally {
@@ -362,10 +374,18 @@ async function carregar() {
   }
 }
 
+function atualizarPaginacao() {
+  const filtered = ordensFiltradas.value
+  const startIndex = (pagination.value.page - 1) * pagination.value.rowsPerPage
+  const endIndex = startIndex + pagination.value.rowsPerPage
+  ordens.value = filtered.slice(startIndex, endIndex)
+  pagination.value.rowsNumber = filtered.length
+}
+
 function onRequest(props) {
   pagination.value.page = props.pagination.page
   pagination.value.rowsPerPage = props.pagination.rowsPerPage
-  carregar()
+  atualizarPaginacao()
 }
 
 async function verDetalhes(ordemId) {
@@ -476,6 +496,15 @@ function excluir(id) {
 onMounted(() => {
   carregar()
 })
+
+watch(
+  [totalFiltrado, () => filtro.value],
+  () => {
+    pagination.value.page = 1
+    atualizarPaginacao()
+  },
+  { deep: true },
+)
 </script>
 
 <style scoped>
