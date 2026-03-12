@@ -1,1 +1,229 @@
 // app global css in SCSS form
+
+// Responsividade Global
+* {
+  transition: all 0.3s ease-in-out;
+}
+
+// Container principal
+.q-page {
+  padding: 24px !important;
+  
+  @media (max-width: 800px) {
+    padding: 12px !important;
+  }
+}
+
+// Cards
+.q-card {
+  @media (max-width: 800px) {
+    padding: 12px !important;
+    
+    .q-card__section {
+      padding: 12px !important;
+    }
+  }
+}
+
+// Inputs e Selects
+.q-field,
+.q-input,
+.q-select {
+  width: 100%;
+  
+  @media (max-width: 800px) {
+    font-size: 14px;
+  }
+}
+
+// Botões
+.q-btn {
+  transition: all 0.3s ease-in-out;
+  
+  @media (max-width: 800px) {
+    min-width: auto;
+    padding: 8px 12px;
+    font-size: 13px;
+    
+    &.q-btn--round {
+      padding: 8px;
+    }
+    
+    .q-btn__content {
+      .block {
+        display: none;
+      }
+    }
+  }
+}
+
+// Tabelas
+.q-table {
+  @media (max-width: 800px) {
+    font-size: 12px;
+    
+    th, td {
+      padding: 8px 4px;
+      font-size: 11px;
+    }
+    
+    .q-btn {
+      padding: 4px;
+      min-width: 32px;
+    }
+    
+    thead tr th {
+      position: sticky;
+      z-index: 1;
+    }
+    
+    &__container {
+      overflow-x: auto;
+    }
+  }
+}
+
+// Títulos
+.text-h6 {
+  @media (max-width: 800px) {
+    font-size: 1.1rem !important;
+  }
+}
+
+.text-h5 {
+  @media (max-width: 800px) {
+    font-size: 1.3rem !important;
+  }
+}
+
+.text-subtitle1 {
+  @media (max-width: 800px) {
+    font-size: 0.95rem !important;
+  }
+}
+
+.text-subtitle2 {
+  @media (max-width: 800px) {
+    font-size: 0.85rem !important;
+  }
+}
+
+// Espaçamentos
+.q-gutter-md,
+.q-col-gutter-md {
+  @media (max-width: 800px) {
+    margin: -8px !important;
+    
+    > * {
+      padding: 8px !important;
+    }
+  }
+}
+
+.q-mb-md {
+  @media (max-width: 800px) {
+    margin-bottom: 12px !important;
+  }
+}
+
+.q-mt-md {
+  @media (max-width: 800px) {
+    margin-top: 12px !important;
+  }
+}
+
+.q-pa-md {
+  @media (max-width: 800px) {
+    padding: 12px !important;
+  }
+}
+
+// Dialog
+.q-dialog__inner {
+  @media (max-width: 800px) {
+    padding: 8px;
+  }
+}
+
+.q-dialog .q-card {
+  @media (max-width: 800px) {
+    min-width: auto !important;
+    width: 100%;
+    max-width: calc(100vw - 16px);
+  }
+}
+
+// Rows responsivas
+.row {
+  @media (max-width: 800px) {
+    .items-center {
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+  }
+}
+
+// Separadores
+.q-separator {
+  @media (max-width: 800px) {
+    margin: 12px 0 !important;
+  }
+}
+
+// Badges
+.q-badge {
+  @media (max-width: 800px) {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+}
+
+// Chips
+.q-chip {
+  @media (max-width: 800px) {
+    font-size: 11px;
+    height: 28px;
+  }
+}
+
+// Lists
+.q-list {
+  @media (max-width: 800px) {
+    .q-item {
+      padding: 8px 12px;
+      min-height: 40px;
+    }
+    
+    .q-item__label {
+      font-size: 13px;
+    }
+    
+    .q-item__label--caption {
+      font-size: 11px;
+    }
+  }
+}
+
+// Expansion items
+.q-expansion-item {
+  @media (max-width: 800px) {
+    .q-item {
+      padding: 8px 12px;
+    }
+  }
+}
+
+// Toolbar
+.q-toolbar {
+  @media (max-width: 800px) {
+    padding: 8px 12px;
+    min-height: 50px;
+  }
+}
+
+// Page container
+.q-page-container {
+  @media (max-width: 800px) {
+    padding-top: 50px !important;
+  }
+}

@@ -1,15 +1,25 @@
 <template>
   <q-header elevated :class="headerClass">
     <q-toolbar>
-      <q-toolbar-title class="text-weight-bold"> Sistema de Gestão </q-toolbar-title>
+      <q-btn
+        flat
+        dense
+        round
+        icon="menu"
+        aria-label="Menu"
+        @click="toggleLeftDrawer"
+        class="lt-md"
+      />
+
+      <q-toolbar-title class="text-weight-bold toolbar-title"> Sistema de Gestão </q-toolbar-title>
 
       <q-space />
 
-      <div v-if="oficinaUsuario" class="text-subtitle2 q-mr-md text-primary text-weight-bold">
+      <div v-if="oficinaUsuario" class="oficina-info text-subtitle2 q-mr-md text-primary text-weight-bold">
         Oficina: {{ oficinaUsuario }}
       </div>
 
-      <div class="text-subtitle2 q-mr-md">{{ saudacao }} {{ nomeUsuario }}</div>
+      <div class="user-greeting text-subtitle2 q-mr-md">{{ saudacao }} {{ nomeUsuario }}</div>
 
       <!-- Dark Mode Toggle -->
       <q-btn flat round :icon="$q.dark.isActive ? 'dark_mode' : 'light_mode'" @click="toggleDark" />
@@ -38,6 +48,12 @@ import { oficinaService } from '../../services/oficinaService'
 const $q = useQuasar()
 const router = useRouter()
 const oficinaUsuario = ref(null)
+
+const emit = defineEmits(['toggle-drawer'])
+
+function toggleLeftDrawer() {
+  emit('toggle-drawer')
+}
 
 const headerClass = computed(() => {
   return $q.dark.isActive ? 'bg-dark text-white' : 'bg-white text-dark'
@@ -89,3 +105,33 @@ onMounted(() => {
   carregarOficina()
 })
 </script>
+
+<style scoped>
+.toolbar-title {
+  transition: all 0.3s ease-in-out;
+}
+
+@media (max-width: 800px) {
+  .toolbar-title {
+    font-size: 1rem;
+  }
+  
+  .oficina-info {
+    display: none;
+  }
+  
+  .user-greeting {
+    display: none;
+  }
+}
+
+@media (min-width: 801px) and (max-width: 1024px) {
+  .oficina-info {
+    font-size: 0.85rem;
+  }
+  
+  .user-greeting {
+    font-size: 0.85rem;
+  }
+}
+</style>

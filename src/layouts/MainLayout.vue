@@ -1,10 +1,10 @@
 <template>
   <q-layout view="lHh Lpr lFf">
     <!-- Sidebar -->
-    <AppSidebar />
+    <AppSidebar v-model="leftDrawerOpen" />
 
     <!-- Header -->
-    <AppHeader />
+    <AppHeader @toggle-drawer="leftDrawerOpen = !leftDrawerOpen" />
 
     <!-- Conteúdo -->
     <q-page-container>
@@ -14,6 +14,9 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import AppSidebar from 'src/components/layout/AppSidebar.vue'
 import AppHeader from 'src/components/layout/AppHeader.vue'
+
+const leftDrawerOpen = ref(false)
 </script>

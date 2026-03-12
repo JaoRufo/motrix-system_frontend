@@ -1,5 +1,5 @@
 <template>
-  <q-drawer show-if-above side="left" bordered :width="260" class="sidebar">
+  <q-drawer v-model="drawerOpen" show-if-above side="left" bordered :width="260" class="sidebar">
     <div class="sidebar-header">
       <img
         src="../../assets/motriz-system-logo-new-removebg.png"
@@ -91,7 +91,18 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+
+const props = defineProps({
+  modelValue: Boolean,
+})
+
+const emit = defineEmits(['update:modelValue'])
+
+const drawerOpen = computed({
+  get: () => props.modelValue,
+  set: (val) => emit('update:modelValue', val),
+})
 
 const isAdmin = ref(false)
 
@@ -114,6 +125,13 @@ onMounted(() => {
   text-align: center;
   background: rgba(255, 255, 255, 0.03);
   border-bottom: 1px solid rgba(66, 165, 245, 0.2);
+  transition: all 0.3s ease-in-out;
+}
+
+@media (max-width: 800px) {
+  .sidebar-header {
+    padding: 16px 12px;
+  }
 }
 
 .sidebar-logo {
@@ -123,6 +141,13 @@ onMounted(() => {
   filter: brightness(1.1);
   display: block;
   margin: 0 auto;
+  transition: all 0.3s ease-in-out;
+}
+
+@media (max-width: 800px) {
+  .sidebar-logo {
+    max-width: 180px;
+  }
 }
 
 .main-separator {
@@ -134,12 +159,19 @@ onMounted(() => {
 .menu-list {
   flex: 1;
   padding: 12px 8px;
+  transition: all 0.3s ease-in-out;
+}
+
+@media (max-width: 800px) {
+  .menu-list {
+    padding: 8px 4px;
+  }
 }
 
 .menu-item {
   border-radius: 10px;
   margin: 4px 0;
-  transition: all 0.3s ease;
+  transition: all 0.3s ease-in-out;
 }
 
 .menu-item:hover {
@@ -154,7 +186,7 @@ onMounted(() => {
 
 .expansion-header {
   border-radius: 10px;
-  transition: all 0.3s ease;
+  transition: all 0.3s ease-in-out;
 }
 
 .expansion-header:hover {
@@ -165,7 +197,7 @@ onMounted(() => {
   border-radius: 8px;
   margin: 2px 8px;
   padding-left: 24px;
-  transition: all 0.3s ease;
+  transition: all 0.3s ease-in-out;
 }
 
 .submenu-item:hover {
@@ -188,6 +220,13 @@ onMounted(() => {
 .sidebar-footer {
   margin-top: auto;
   padding: 16px;
+  transition: all 0.3s ease-in-out;
+}
+
+@media (max-width: 800px) {
+  .sidebar-footer {
+    padding: 12px;
+  }
 }
 
 .footer-separator {

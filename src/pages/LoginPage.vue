@@ -322,35 +322,85 @@ async function login() {
   text-align: center;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 800px) {
   .login-container {
     flex-direction: column;
   }
 
   .login-left {
     flex: 0;
-    padding: 30px 20px;
+    padding: 16px 12px;
+    min-height: 200px;
+  }
+
+  .brand-section {
+    max-width: 100%;
+    padding: 0 8px;
   }
 
   .brand-logo {
-    max-width: 200px;
+    max-width: 160px;
+    margin-bottom: 12px;
   }
 
   .brand-title {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
+    margin-bottom: 8px;
   }
 
   .brand-subtitle {
-    font-size: 1rem;
+    font-size: 0.85rem;
+    line-height: 1.3;
+    padding: 0 4px;
   }
 
   .login-right {
     flex: 1;
+    padding: 20px 12px;
   }
 
-  .card-header,
+  .login-card {
+    max-width: 100%;
+  }
+
+  .card-header {
+    padding: 24px 20px 16px 20px;
+  }
+
   .card-body {
-    padding: 30px 25px;
+    padding: 16px 20px 24px 20px;
+  }
+
+  .login-title {
+    font-size: 1.5rem;
+  }
+
+  .login-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .input-field {
+    margin-bottom: 16px;
+  }
+
+  .input-field :deep(.q-field__control) {
+    height: 45px;
+  }
+
+  .login-btn {
+    height: 45px;
+    font-size: 0.95rem;
+  }
+
+  .error-message {
+    font-size: 0.85rem;
+    padding: 12px 14px;
+    min-height: 42px;
+  }
+
+  .footer-text {
+    font-size: 0.75rem;
+    margin-top: 20px;
   }
 }
 </style>
