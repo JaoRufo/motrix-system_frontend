@@ -23,7 +23,9 @@
             dense
             class="input-field"
             :error="error"
-            @input="error = false"
+            hide-bottom-space
+            no-error-icon
+            @focus="clearError"
           >
             <template v-slot:prepend>
               <q-icon name="person" color="blue-7" />
@@ -38,12 +40,16 @@
             dense
             class="input-field"
             :error="error"
-            @input="error = false"
+            hide-bottom-space
+            no-error-icon
+            @focus="clearError"
             @keyup.enter="login"
+            @input="clearError"
           >
             <template v-slot:prepend>
               <q-icon name="lock" color="blue-7" />
             </template>
+
             <template v-slot:append>
               <q-icon
                 :name="isPwd ? 'visibility_off' : 'visibility'"
@@ -54,7 +60,7 @@
           </q-input>
 
           <div v-if="error" class="error-message">
-            <q-icon name="error" size="18px" />
+            <q-icon name="error" size="20px" />
             {{ errorMessage }}
           </div>
 
@@ -90,6 +96,11 @@ const isPwd = ref(true)
 const loading = ref(false)
 const router = useRouter()
 
+function clearError() {
+  error.value = false
+  errorMessage.value = ''
+}
+
 async function login() {
   if (!username.value || !password.value) {
     error.value = true
@@ -115,14 +126,7 @@ async function login() {
   } catch (err) {
     error.value = true
     errorMessage.value = err.message || 'Usuário ou senha inválidos'
-
-    Notify.create({
-      type: 'negative',
-      message: err.message || 'Usuário ou senha inválidos',
-      position: 'top',
-      timeout: 5000,
-      icon: 'error',
-    })
+    password.value = ''
   } finally {
     loading.value = false
   }

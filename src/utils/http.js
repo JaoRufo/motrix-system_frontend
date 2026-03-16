@@ -12,35 +12,23 @@ class HttpClient {
       },
     }
 
-    try {
-      const response = await fetch(url, config)
+    const response = await fetch(url, config)
+    const data = await response.json()
 
-      if (response.status === 401 || response.status === 403) {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-        window.location.href = '/login'
-        throw { status: response.status, message: 'Sessão expirada' }
-      }
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw {
-          status: response.status,
-          message: data.message || 'Erro na requisição',
-          data,
-        }
-      }
-
-      return data
-    } catch (error) {
-      if (error.status === 401 || error.status === 403) {
+    if (!response.ok) {
+      if ((response.status === 401 || response.status === 403) && localStorage.getItem('token')) {
         localStorage.removeItem('token')
         localStorage.removeItem('user')
         window.location.href = '/login'
       }
-      throw error
+      throw {
+        status: response.status,
+        message: data.message || 'Usuário ou senha inválidos',
+        data,
+      }
     }
+
+    return data
   }
 
   get(endpoint) {
