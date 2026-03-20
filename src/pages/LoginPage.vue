@@ -125,7 +125,15 @@ async function login() {
     router.push('/ordens')
   } catch (err) {
     error.value = true
-    errorMessage.value = err.message || 'Usuário ou senha inválidos'
+    const msg = (err.data?.error || err.message || '').toLowerCase()
+    const bloqueado =
+      msg.includes('inativo') ||
+      msg.includes('bloqueado') ||
+      msg.includes('inactive') ||
+      msg.includes('disabled')
+    errorMessage.value = bloqueado
+      ? 'Acesso bloqueado, contate um administrador'
+      : 'Usuário ou senha inválidos'
     password.value = ''
   } finally {
     loading.value = false
