@@ -61,13 +61,7 @@
             <q-btn icon="history" flat round color="info" @click="verHistorico(props.row)">
               <q-tooltip>Histórico de Serviços</q-tooltip>
             </q-btn>
-            <q-btn
-              icon="edit"
-              flat
-              round
-              color="primary"
-              @click="editarCliente(props.row.id)"
-            >
+            <q-btn icon="edit" flat round color="primary" @click="editarCliente(props.row.id)">
               <q-tooltip>Editar</q-tooltip>
             </q-btn>
             <q-btn icon="delete" flat round color="negative" @click.stop="excluir(props.row.id)">
@@ -106,8 +100,11 @@
     </q-dialog>
 
     <!-- Dialog de Histórico -->
-    <q-dialog v-model="dialogHistorico" maximized>
-      <q-card v-if="clienteSelecionado">
+    <q-dialog v-model="dialogHistorico">
+      <q-card
+        v-if="clienteSelecionado"
+        style="width: 800px; max-width: 95vw; max-height: 90vh; overflow-y: auto"
+      >
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">Histórico de Serviços - {{ clienteSelecionado.nome }}</div>
           <q-space />
@@ -129,11 +126,18 @@
                 :label="`O.S #${ordem.id} - ${ordem.veiculo}`"
                 :caption="`${new Date(ordem.data).toLocaleDateString()} - ${ordem.status}`"
                 expand-separator
+                group="historico"
+                :class="{ 'expansion-ativa': ordemExpandida === ordem.id }"
+                @show="ordemExpandida = ordem.id"
+                @hide="ordemExpandida === ordem.id && (ordemExpandida = null)"
               >
                 <template v-slot:header>
                   <q-item-section>
                     <q-item-label>O.S #{{ ordem.id }} - {{ ordem.veiculo }}</q-item-label>
-                    <q-item-label caption>{{ new Date(ordem.data).toLocaleDateString() }} - {{ ordem.status }}</q-item-label>
+                    <q-item-label caption
+                      >{{ new Date(ordem.data).toLocaleDateString() }} -
+                      {{ ordem.status }}</q-item-label
+                    >
                   </q-item-section>
                   <q-item-section side>
                     <q-btn
@@ -197,7 +201,9 @@
                     <q-list bordered separator v-if="ordem.pecas && ordem.pecas.length">
                       <q-item v-for="(peca, idx) in ordem.pecas" :key="idx">
                         <q-item-section>{{ peca.nome }}</q-item-section>
-                        <q-item-section side>R$ {{ parseFloat(peca.valor || 0).toFixed(2) }}</q-item-section>
+                        <q-item-section side
+                          >R$ {{ parseFloat(peca.valor || 0).toFixed(2) }}</q-item-section
+                        >
                       </q-item>
                     </q-list>
                     <div v-else class="text-grey q-mb-md">Nenhuma peça utilizada</div>
@@ -208,7 +214,9 @@
                     <q-list bordered separator v-if="ordem.maoObra && ordem.maoObra.length">
                       <q-item v-for="(mao, idx) in ordem.maoObra" :key="idx">
                         <q-item-section>{{ mao.descricao }}</q-item-section>
-                        <q-item-section side>R$ {{ parseFloat(mao.valor || 0).toFixed(2) }}</q-item-section>
+                        <q-item-section side
+                          >R$ {{ parseFloat(mao.valor || 0).toFixed(2) }}</q-item-section
+                        >
                       </q-item>
                     </q-list>
                     <div v-else class="text-grey q-mb-md">Nenhum serviço realizado</div>
@@ -244,37 +252,37 @@ const dialogFiltros = ref(false)
 const filtro = ref({
   nome: '',
   cpf: '',
-  placa: ''
+  placa: '',
 })
 
 function limparFiltros() {
   filtro.value = {
     nome: '',
     cpf: '',
-    placa: ''
+    placa: '',
   }
 }
 
 const clientesFiltrados = computed(() => {
   let resultado = todosClientes.value
-  
+
   if (filtro.value.nome) {
     const needle = filtro.value.nome.toLowerCase()
-    resultado = resultado.filter(c => c.nome?.toLowerCase().includes(needle))
+    resultado = resultado.filter((c) => c.nome?.toLowerCase().includes(needle))
   }
-  
+
   if (filtro.value.cpf) {
     const needle = filtro.value.cpf.toLowerCase()
-    resultado = resultado.filter(c => c.cpf?.toLowerCase().includes(needle))
+    resultado = resultado.filter((c) => c.cpf?.toLowerCase().includes(needle))
   }
-  
+
   if (filtro.value.placa) {
     const needle = filtro.value.placa.toLowerCase()
-    resultado = resultado.filter(c => 
-      c.veiculos?.some(v => v.placa?.toLowerCase().includes(needle))
+    resultado = resultado.filter((c) =>
+      c.veiculos?.some((v) => v.placa?.toLowerCase().includes(needle)),
     )
   }
-  
+
   return resultado
 })
 
@@ -305,11 +313,12 @@ const todosClientes = ref([])
 const pagination = ref({
   page: 1,
   rowsPerPage: 10,
-  rowsNumber: 0
+  rowsNumber: 0,
 })
 const dialogHistorico = ref(false)
 const clienteSelecionado = ref(null)
 const historicoOrdens = ref([])
+const ordemExpandida = ref(null)
 const loading = ref(false)
 
 const statusColors = {
@@ -356,15 +365,17 @@ async function verHistorico(cliente) {
   try {
     const historico = await clienteService.buscarHistorico(cliente.id)
     const usuarios = await oficinaService.buscarMecanicos()
-    
+
     const ordensCompletas = await Promise.all(
       historico.map(async (ordem) => {
         try {
           const ordemCompleta = await ordemService.buscarPorId(ordem.id)
-          const mecanico = usuarios.find(u => u.id === ordemCompleta.mecanico_id)
+          const mecanico = usuarios.find((u) => u.id === ordemCompleta.mecanico_id)
           return {
             id: ordemCompleta.id,
-            veiculo: ordem.modelo ? `${ordem.modelo} - ${ordem.placa}` : ordem.veiculo_placa || 'N/A',
+            veiculo: ordem.modelo
+              ? `${ordem.modelo} - ${ordem.placa}`
+              : ordem.veiculo_placa || 'N/A',
             kmAtual: ordemCompleta.km_atual,
             status: ordemCompleta.status,
             descricaoProblema: ordemCompleta.descricao_problema,
@@ -372,15 +383,23 @@ async function verHistorico(cliente) {
             motivoCancelamento: ordemCompleta.motivo_cancelamento,
             data: ordemCompleta.created_at || ordemCompleta.data,
             total: parseFloat(ordemCompleta.total) || 0,
-            pecas: (ordemCompleta.pecas || []).map(p => ({ ...p, valor: parseFloat(p.valor || 0) })),
-            maoObra: (ordemCompleta.maoObra || ordemCompleta.mao_obra || []).map(m => ({ ...m, valor: parseFloat(m.valor || 0) })),
+            pecas: (ordemCompleta.pecas || []).map((p) => ({
+              ...p,
+              valor: parseFloat(p.valor || 0),
+            })),
+            maoObra: (ordemCompleta.maoObra || ordemCompleta.mao_obra || []).map((m) => ({
+              ...m,
+              valor: parseFloat(m.valor || 0),
+            })),
             oficina: mecanico?.oficina_nome || null,
-            mecanico: mecanico?.mecanico_nome || null
+            mecanico: mecanico?.mecanico_nome || null,
           }
         } catch {
           return {
             id: ordem.id,
-            veiculo: ordem.modelo ? `${ordem.modelo} - ${ordem.placa}` : ordem.veiculo_placa || 'N/A',
+            veiculo: ordem.modelo
+              ? `${ordem.modelo} - ${ordem.placa}`
+              : ordem.veiculo_placa || 'N/A',
             kmAtual: ordem.km_atual,
             status: ordem.status,
             descricaoProblema: ordem.descricao_problema,
@@ -391,12 +410,12 @@ async function verHistorico(cliente) {
             pecas: [],
             maoObra: [],
             oficina: null,
-            mecanico: null
+            mecanico: null,
           }
         }
-      })
+      }),
     )
-    
+
     historicoOrdens.value = ordensCompletas
     dialogHistorico.value = true
   } catch {
@@ -440,10 +459,14 @@ onMounted(() => {
   carregar()
 })
 
-watch([totalClientesFiltrado, () => filtro.value], () => {
-  pagination.value.page = 1
-  atualizarPaginacao()
-}, { deep: true })
+watch(
+  [totalClientesFiltrado, () => filtro.value],
+  () => {
+    pagination.value.page = 1
+    atualizarPaginacao()
+  },
+  { deep: true },
+)
 </script>
 
 <style scoped>
@@ -455,5 +478,10 @@ watch([totalClientesFiltrado, () => filtro.value], () => {
 .btn-custom:hover {
   box-shadow: 0 6px 16px rgba(255, 107, 53, 0.4);
   transform: translateY(-2px);
+}
+
+.expansion-ativa {
+  border-left: 3px solid #ff6b35;
+  background: rgba(255, 107, 53, 0.04);
 }
 </style>
