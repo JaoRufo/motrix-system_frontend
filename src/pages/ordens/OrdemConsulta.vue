@@ -109,7 +109,7 @@
     <q-dialog v-model="dialogDetalhes">
       <q-card
         v-if="ordemSelecionada"
-        style="width: 800px; max-width: 95vw; max-height: 90vh; overflow-y: auto"
+        style="width: 1000px; max-width: 95vw; max-height: 90vh; overflow-y: auto"
       >
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">Ordem de Serviço #{{ ordemSelecionada.id }}</div>

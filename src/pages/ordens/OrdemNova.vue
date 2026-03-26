@@ -220,9 +220,7 @@ const router = useRouter()
 const $q = useQuasar()
 
 function voltarSeguro() {
-  if (window.history.length > 2) {
-    router.push('/ordens')
-  }
+  router.push('/ordens')
 }
 
 const clienteSelecionado = ref(null)

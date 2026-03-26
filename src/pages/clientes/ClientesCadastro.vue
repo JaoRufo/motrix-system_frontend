@@ -133,7 +133,7 @@ const route = useRoute()
 const $q = useQuasar()
 
 function voltarSeguro() {
-  router.push('/ordens')
+  router.push('/clientes/consulta')
 }
 
 const salvando = ref(false)

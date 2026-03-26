@@ -103,7 +103,7 @@
     <q-dialog v-model="dialogHistorico">
       <q-card
         v-if="clienteSelecionado"
-        style="width: 800px; max-width: 95vw; max-height: 90vh; overflow-y: auto"
+        style="width: 1000px; max-width: 95vw; max-height: 90vh; overflow-y: auto"
       >
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">Histórico de Serviços - {{ clienteSelecionado.nome }}</div>
