@@ -1,10 +1,22 @@
 <template>
   <div class="login-container">
     <div class="login-left">
-      <div class="brand-section">
-        <img src="../assets/motriz-system-logo-new.png" alt="Motrix System" class="brand-logo" />
-        <h2 class="brand-title">Sistema de Gestão Automotiva</h2>
-        <p class="brand-subtitle">Controle completo da sua oficina em um só lugar</p>
+      <div class="left-content">
+        <div class="brand-section">
+          <img src="../assets/motriz-system-logo-new.png" alt="Motrix System" class="brand-logo" />
+          <h2 class="brand-title">Sistema de Gestão Automotiva</h2>
+          <p class="brand-subtitle">Controle completo da sua oficina em um só lugar.</p>
+        </div>
+        <div class="subicons-container">
+          <div class="subicon-item">
+            <img src="../assets/verified_user.svg" />
+            <span>Segurança de Dados</span>
+          </div>
+          <div class="subicon-item">
+            <img src="../assets/car_gear.svg" />
+            <span>Foco no Cliente</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -231,6 +243,30 @@ async function login() {
   color: #2a5298;
   margin: 0;
   font-weight: 400;
+}
+
+.left-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 1;
+}
+
+.subicons-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  margin-top: 28px;
+}
+
+.subicon-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #a0aec0;
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .login-right {
