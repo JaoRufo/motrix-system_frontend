@@ -9,15 +9,15 @@ export default route(function () {
     routes,
   })
 
-  Router.beforeEach((to, from, next) => {
+  const publicRoutes = ['/login', '/forgot-password', '/reset-password']
+
+  Router.beforeEach((to) => {
     const isAuthenticated = authService.isAuthenticated()
 
-    if (!isAuthenticated && to.path !== '/login') {
-      next('/login')
+    if (!isAuthenticated && !publicRoutes.includes(to.path)) {
+      return '/login'
     } else if (isAuthenticated && to.path === '/login') {
-      next('/ordens')
-    } else {
-      next()
+      return '/ordens'
     }
   })
 

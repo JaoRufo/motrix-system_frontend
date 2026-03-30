@@ -11,72 +11,57 @@
     <div class="login-right">
       <q-card flat class="login-card">
         <q-card-section class="card-header">
-          <h2 class="login-title">Bem-vindo</h2>
-          <p class="login-subtitle">Faça login para continuar</p>
+          <h2 class="login-title">Recuperar Senha</h2>
+          <p class="login-subtitle">Informe seu email para receber as instruções</p>
         </q-card-section>
 
         <q-card-section class="card-body">
-          <q-input
-            v-model="username"
-            label="Usuário"
-            outlined
-            dense
-            class="input-field"
-            :error="error"
-            hide-bottom-space
-            no-error-icon
-            @focus="clearError"
-          >
-            <template v-slot:prepend>
-              <q-icon name="person" color="blue-7" />
-            </template>
-          </q-input>
+          <template v-if="!enviado">
+            <q-input
+              v-model="email"
+              label="Email"
+              type="email"
+              outlined
+              dense
+              class="input-field"
+              :error="!!errorMessage"
+              hide-bottom-space
+              no-error-icon
+              @focus="errorMessage = ''"
+              @keyup.enter="enviar"
+            >
+              <template v-slot:prepend>
+                <q-icon name="email" color="blue-7" />
+              </template>
+            </q-input>
 
-          <q-input
-            v-model="password"
-            label="Senha"
-            :type="isPwd ? 'password' : 'text'"
-            outlined
-            dense
-            class="input-field"
-            :error="error"
-            hide-bottom-space
-            no-error-icon
-            @focus="clearError"
-            @keyup.enter="login"
-            @input="clearError"
-          >
-            <template v-slot:prepend>
-              <q-icon name="lock" color="blue-7" />
-            </template>
+            <div v-if="errorMessage" class="error-message">
+              <q-icon name="error" size="20px" />
+              {{ errorMessage }}
+            </div>
 
-            <template v-slot:append>
-              <q-icon
-                :name="isPwd ? 'visibility_off' : 'visibility'"
-                class="cursor-pointer"
-                @click="isPwd = !isPwd"
-              />
-            </template>
-          </q-input>
+            <q-btn
+              label="Enviar"
+              color="primary"
+              class="login-btn"
+              @click="enviar"
+              :loading="loading"
+              :disable="loading"
+              unelevated
+              size="lg"
+            />
+          </template>
 
-          <div v-if="error" class="error-message">
-            <q-icon name="error" size="20px" />
-            {{ errorMessage }}
+          <div v-else class="success-message">
+            <q-icon name="check_circle" size="40px" color="positive" />
+            <p>
+              Se existir uma conta com esse email, você receberá instruções para redefinir sua
+              senha.
+            </p>
           </div>
 
-          <q-btn
-            label="Entrar"
-            color="primary"
-            class="login-btn"
-            @click="login"
-            :loading="loading"
-            :disable="loading"
-            unelevated
-            size="lg"
-          />
-
           <div class="text-center q-mt-md">
-            <router-link to="/forgot-password" class="forgot-link">Esqueci minha senha</router-link>
+            <router-link to="/login" class="back-link">Voltar para o login</router-link>
           </div>
         </q-card-section>
       </q-card>
@@ -88,71 +73,38 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { authService } from '../services/authService'
-import { Notify } from 'quasar'
 
-const username = ref('')
-const password = ref('')
-const error = ref(false)
-const errorMessage = ref('')
-const isPwd = ref(true)
-const loading = ref(false)
-const router = useRouter()
 const route = useRoute()
 
+const email = ref('')
+const loading = ref(false)
+const enviado = ref(false)
+const errorMessage = ref('')
+
 onMounted(() => {
-  if (route.query.sucesso === 'senha-redefinida') {
-    Notify.create({
-      type: 'positive',
-      message: 'Senha redefinida com sucesso! Faça login com sua nova senha.',
-      position: 'top',
-      timeout: 4000,
-    })
+  if (route.query.erro === 'link-invalido') {
+    errorMessage.value = 'Link inválido ou expirado. Solicite um novo link abaixo.'
   }
 })
 
-function clearError() {
-  error.value = false
-  errorMessage.value = ''
-}
-
-async function login() {
-  if (!username.value || !password.value) {
-    error.value = true
-    errorMessage.value = 'Preencha usuário e senha'
+async function enviar() {
+  if (!email.value) {
+    errorMessage.value = 'Informe seu email'
     return
   }
 
   loading.value = true
-  error.value = false
   errorMessage.value = ''
 
   try {
-    await authService.login(username.value, password.value)
-
-    Notify.create({
-      type: 'positive',
-      message: 'Login realizado com sucesso!',
-      position: 'top',
-      timeout: 2000,
-    })
-
-    router.push('/ordens')
-  } catch (err) {
-    error.value = true
-    const msg = (err.data?.error || err.message || '').toLowerCase()
-    const bloqueado =
-      msg.includes('inativo') ||
-      msg.includes('bloqueado') ||
-      msg.includes('inactive') ||
-      msg.includes('disabled')
-    errorMessage.value = bloqueado
-      ? 'Acesso bloqueado, contate um administrador'
-      : 'Usuário ou senha inválidos'
-    password.value = ''
+    await authService.forgotPassword(email.value)
+  } catch {
+    // silencia erros — mensagem genérica sempre
   } finally {
     loading.value = false
+    enviado.value = true
   }
 }
 </script>
@@ -223,7 +175,6 @@ async function login() {
   font-weight: 700;
   color: #1e3c72;
   margin: 0 0 15px 0;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .brand-subtitle {
@@ -275,7 +226,6 @@ async function login() {
   font-size: 1rem;
   color: #2a5298;
   margin: 0;
-  font-weight: 400;
 }
 
 .card-body {
@@ -291,14 +241,6 @@ async function login() {
   height: 50px;
 }
 
-.input-field :deep(.q-field__control):before {
-  border-color: #d1d5db;
-}
-
-.input-field :deep(.q-field__control):hover:before {
-  border-color: #2a5298;
-}
-
 .error-message {
   display: flex;
   align-items: center;
@@ -312,7 +254,50 @@ async function login() {
   border-radius: 8px;
   border-left: 4px solid #dc3545;
   animation: slideIn 0.3s ease;
-  min-height: 48px;
+}
+
+.success-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  color: #1e3c72;
+  font-size: 1rem;
+  padding: 10px 0 20px;
+}
+
+.success-message p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.login-btn {
+  width: 100%;
+  height: 50px;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: none;
+  background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+  box-shadow: 0 4px 15px rgba(42, 82, 152, 0.3);
+}
+
+.back-link {
+  color: #2a5298;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+.footer-text {
+  margin-top: 30px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.85rem;
+  text-align: center;
 }
 
 @keyframes slideIn {
@@ -326,119 +311,40 @@ async function login() {
   }
 }
 
-.login-btn {
-  width: 100%;
-  height: 50px;
-  border-radius: 10px;
-  font-size: 1rem;
-  font-weight: 600;
-  text-transform: none;
-  background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
-  box-shadow: 0 4px 15px rgba(42, 82, 152, 0.3);
-  transition: all 0.3s ease;
-}
-
-.login-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(42, 82, 152, 0.4);
-}
-
-.forgot-link {
-  color: #2a5298;
-  font-size: 0.9rem;
-  text-decoration: none;
-}
-
-.forgot-link:hover {
-  text-decoration: underline;
-}
-
-.footer-text {
-  margin-top: 30px;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.85rem;
-  text-align: center;
-}
-
 @media (max-width: 800px) {
   .login-container {
     flex-direction: column;
   }
-
   .login-left {
     flex: 0;
     padding: 16px 12px;
     min-height: 200px;
   }
-
-  .brand-section {
-    max-width: 100%;
-    padding: 0 8px;
-  }
-
   .brand-logo {
     max-width: 160px;
     margin-bottom: 12px;
   }
-
   .brand-title {
     font-size: 1.2rem;
-    margin-bottom: 8px;
   }
-
   .brand-subtitle {
     font-size: 0.85rem;
-    line-height: 1.3;
-    padding: 0 4px;
   }
-
   .login-right {
     flex: 1;
     padding: 20px 12px;
   }
-
   .login-card {
     max-width: 100%;
   }
-
   .card-header {
     padding: 24px 20px 16px 20px;
   }
-
   .card-body {
     padding: 16px 20px 24px 20px;
   }
-
   .login-title {
     font-size: 1.5rem;
-  }
-
-  .login-subtitle {
-    font-size: 0.9rem;
-  }
-
-  .input-field {
-    margin-bottom: 16px;
-  }
-
-  .input-field :deep(.q-field__control) {
-    height: 45px;
-  }
-
-  .login-btn {
-    height: 45px;
-    font-size: 0.95rem;
-  }
-
-  .error-message {
-    font-size: 0.85rem;
-    padding: 12px 14px;
-    min-height: 42px;
-  }
-
-  .footer-text {
-    font-size: 0.75rem;
-    margin-top: 20px;
   }
 }
 </style>
