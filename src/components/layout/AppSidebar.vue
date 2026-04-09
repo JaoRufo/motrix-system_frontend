@@ -12,6 +12,17 @@
     <q-separator class="main-separator" />
 
     <q-list padding class="menu-list">
+      <q-item clickable v-ripple to="/dashboard" active-class="item-active" class="menu-item">
+        <q-item-section avatar>
+          <q-icon name="dashboard" size="22px" />
+        </q-item-section>
+        <q-item-section>
+          <q-item-label>Dashboard</q-item-label>
+        </q-item-section>
+      </q-item>
+
+      <q-separator class="category-separator" />
+
       <q-item clickable v-ripple to="/ordens" active-class="item-active" class="menu-item">
         <q-item-section avatar>
           <q-icon name="assignment" size="22px" />

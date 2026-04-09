@@ -75,6 +75,20 @@
         </div>
 
         <div class="col-12 col-md-3">
+          <q-input
+            v-model="dataPrevista"
+            label="Data Prevista (opcional)"
+            outlined
+            dense
+            type="date"
+          >
+            <template v-slot:prepend>
+              <q-icon name="event" />
+            </template>
+          </q-input>
+        </div>
+
+        <div class="col-12 col-md-3">
           <q-select
             v-model="oficinaSelecionada"
             :options="oficinasOptions"
@@ -232,6 +246,7 @@ const status = ref('Aberta')
 const descricaoProblema = ref('')
 const observacoes = ref('')
 const motivoCancelamento = ref('')
+const dataPrevista = ref('')
 const pecas = ref([])
 const maoObra = ref([])
 const clientesOptions = ref([])
@@ -398,6 +413,7 @@ async function salvar() {
         descricao_problema: descricaoProblema.value,
         observacoes: observacoes.value || null,
         motivo_cancelamento: status.value === 'Cancelada' ? motivoCancelamento.value : null,
+        data_prevista: dataPrevista.value || null,
         oficina_id: oficinaSelecionada.value?.id || null,
         mecanico_id: mecanicoSelecionado.value?.id || null,
       },
@@ -501,6 +517,9 @@ onMounted(async () => {
       descricaoProblema.value = ordem.descricao_problema || ''
       observacoes.value = ordem.observacoes || ''
       motivoCancelamento.value = ordem.motivo_cancelamento || ''
+      dataPrevista.value = ordem.data_prevista
+        ? ordem.data_prevista.slice(0, 10)
+        : ''
       pecas.value = (ordem.pecas || []).map((p) => ({
         nome: p.nome,
         valor: parseFloat(p.valor) || 0,
