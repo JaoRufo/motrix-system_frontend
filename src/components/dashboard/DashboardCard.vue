@@ -1,5 +1,10 @@
 <template>
-  <q-card class="dashboard-card" :style="`--card-color: ${color}`">
+  <q-card
+    class="dashboard-card"
+    :style="`--card-color: ${color}`"
+    :class="{ 'cursor-pointer': clickable }"
+    @click="clickable && $emit('click')"
+  >
     <q-card-section class="card-inner">
       <div class="card-icon-wrap">
         <q-icon :name="icon" size="28px" color="white" />
@@ -10,6 +15,7 @@
         <div v-else class="card-value">{{ displayValue }}</div>
         <div v-if="subtitle && !loading" class="card-subtitle">{{ subtitle }}</div>
       </div>
+      <q-icon v-if="clickable && !loading" name="chevron_right" size="20px" class="card-arrow" />
     </q-card-section>
   </q-card>
 </template>
@@ -26,7 +32,10 @@ const props = defineProps({
   prefix: { type: String, default: '' },
   subtitle: { type: String, default: '' },
   isFloat: { type: Boolean, default: false },
+  clickable: { type: Boolean, default: false },
 })
+
+defineEmits(['click'])
 
 const displayValue = ref(props.prefix + '0')
 let animFrame = null
@@ -69,7 +78,6 @@ onUnmounted(() => cancelAnimationFrame(animFrame))
 <style scoped>
 .dashboard-card {
   border-radius: 16px;
-  background: white;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   border-top: 4px solid var(--card-color);
   transition:
@@ -80,7 +88,7 @@ onUnmounted(() => cancelAnimationFrame(animFrame))
 
 .dashboard-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
 }
 
 .card-inner {
@@ -127,5 +135,23 @@ onUnmounted(() => cancelAnimationFrame(animFrame))
   font-size: 0.75rem;
   color: #90a4ae;
   margin-top: 2px;
+}
+
+.card-arrow {
+  color: #90a4ae;
+  flex-shrink: 0;
+}
+
+/* Dark mode */
+body.body--dark .card-title {
+  color: #90a4ae;
+}
+
+body.body--dark .card-value {
+  color: #e3f2fd;
+}
+
+body.body--dark .card-subtitle {
+  color: #607d8b;
 }
 </style>

@@ -3,43 +3,79 @@
     <q-card-section class="q-pb-none">
       <div class="row items-center justify-between">
         <div>
-          <div class="chart-title">Faturamento dos Últimos 7 Dias</div>
+          <div class="chart-title">Faturamento — Últimos {{ selectedDays }} dias</div>
           <div class="chart-subtitle">Receita diária em R$</div>
         </div>
-        <q-icon name="bar_chart" size="28px" color="primary" />
+        <div class="row items-center q-gutter-sm">
+          <q-select
+            v-model="selectedDays"
+            :options="periodOptions"
+            option-value="value"
+            option-label="label"
+            emit-value
+            map-options
+            dense
+            outlined
+            style="min-width: 130px"
+            @update:model-value="$emit('period-change', $event)"
+          />
+          <q-icon name="bar_chart" size="28px" color="primary" />
+        </div>
       </div>
     </q-card-section>
 
     <q-card-section>
       <div v-if="loading" class="chart-skeleton">
-        <q-skeleton v-for="i in 7" :key="i" type="rect" :height="`${30 + i * 15}px`" width="12%" />
+        <q-skeleton
+          v-for="i in selectedDays"
+          :key="i"
+          type="rect"
+          :height="`${20 + i * 5}px`"
+          style="flex: 1; max-width: 40px"
+        />
       </div>
-      <canvas v-else ref="canvasRef" height="220" />
+      <canvas v-else ref="canvasRef" />
     </q-card-section>
   </q-card>
 </template>
 
 <script setup>
 import { ref, watch, onUnmounted, nextTick } from 'vue'
+import { useQuasar } from 'quasar'
 
 const props = defineProps({
   data: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
+  days: { type: Number, default: 7 },
 })
 
+defineEmits(['period-change'])
+
+const $q = useQuasar()
 const canvasRef = ref(null)
+const selectedDays = ref(props.days)
+
+const periodOptions = [
+  { label: 'Últimos 7 dias', value: 7 },
+  { label: 'Últimos 30 dias', value: 30 },
+]
+
 let chartInstance = null
 
 async function renderChart() {
-  if (!canvasRef.value || !props.data.length) return
+  if (!canvasRef.value) return
 
   const { Chart, registerables } = await import('chart.js')
   Chart.register(...registerables)
 
   if (chartInstance) chartInstance.destroy()
 
-  const labels = props.data.map((d) => d.label || d.date || d.dia)
-  const values = props.data.map((d) => d.value || d.total || d.faturamento || 0)
+  const isDark = $q.dark.isActive
+  const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'
+  const tickColor = isDark ? '#90a4ae' : '#607d8b'
+
+  const labels = props.data.map((d) => d.label || d.date || d.dia || '')
+  const values = props.data.map((d) => parseFloat(d.value ?? d.total ?? d.faturamento ?? 0))
 
   chartInstance = new Chart(canvasRef.value, {
     type: 'bar',
@@ -49,8 +85,8 @@ async function renderChart() {
         {
           label: 'Faturamento (R$)',
           data: values,
-          backgroundColor: 'rgba(13, 71, 161, 0.75)',
-          borderColor: '#0d47a1',
+          backgroundColor: isDark ? 'rgba(66,165,245,0.7)' : 'rgba(13,71,161,0.75)',
+          borderColor: isDark ? '#42a5f5' : '#0d47a1',
           borderWidth: 2,
           borderRadius: 8,
           borderSkipped: false,
@@ -72,15 +108,19 @@ async function renderChart() {
       scales: {
         y: {
           beginAtZero: true,
-          grid: { color: 'rgba(0,0,0,0.05)' },
+          grid: { color: gridColor },
           ticks: {
-            callback: (v) => 'R$ ' + v.toLocaleString('pt-BR'),
+            color: tickColor,
+            callback: (v) => {
+              if (v >= 1000) return 'R$ ' + (v / 1000).toFixed(0) + 'k'
+              return 'R$ ' + v.toLocaleString('pt-BR')
+            },
             font: { size: 11 },
           },
         },
         x: {
           grid: { display: false },
-          ticks: { font: { size: 11 } },
+          ticks: { color: tickColor, font: { size: 11 } },
         },
       },
     },
@@ -88,7 +128,7 @@ async function renderChart() {
 }
 
 watch(
-  () => [props.data, props.loading],
+  () => [props.data, props.loading, $q.dark.isActive],
   async ([, loading]) => {
     if (!loading) {
       await nextTick()
@@ -122,12 +162,17 @@ onUnmounted(() => chartInstance?.destroy())
   align-items: flex-end;
   justify-content: space-around;
   height: 220px;
-  gap: 8px;
+  gap: 6px;
   padding: 0 8px;
 }
 
 canvas {
   width: 100% !important;
   height: 220px !important;
+  display: block;
+}
+
+body.body--dark .chart-title {
+  color: #e3f2fd;
 }
 </style>

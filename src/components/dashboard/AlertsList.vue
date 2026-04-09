@@ -58,26 +58,9 @@ defineProps({
   loading: { type: Boolean, default: false },
 })
 
-const iconMap = {
-  warning: 'warning',
-  error: 'error',
-  info: 'info',
-  success: 'check_circle',
-}
-
-const colorMap = {
-  warning: 'warning',
-  error: 'negative',
-  info: 'info',
-  success: 'positive',
-}
-
-const labelMap = {
-  warning: 'Atenção',
-  error: 'Urgente',
-  info: 'Info',
-  success: 'OK',
-}
+const iconMap = { warning: 'warning', error: 'error', info: 'info', success: 'check_circle' }
+const colorMap = { warning: 'warning', error: 'negative', info: 'info', success: 'positive' }
+const labelMap = { warning: 'Atenção', error: 'Urgente', info: 'Info', success: 'OK' }
 </script>
 
 <style scoped>
@@ -126,7 +109,6 @@ const labelMap = {
 .alert-message {
   font-size: 0.88rem;
   font-weight: 500;
-  color: #37474f;
 }
 
 .no-alerts {
@@ -137,5 +119,10 @@ const labelMap = {
   padding: 24px 0;
   color: #90a4ae;
   font-size: 0.9rem;
+}
+
+/* Dark mode */
+body.body--dark .alerts-title {
+  color: #e3f2fd;
 }
 </style>
