@@ -150,7 +150,7 @@ async function login() {
       timeout: 2000,
     })
 
-    router.push('/ordens')
+    router.push('/dashboard')
   } catch (err) {
     error.value = true
     const msg = (err.data?.error || err.message || '').toLowerCase()

@@ -5,7 +5,11 @@ const routes = [
     children: [
       {
         path: '',
-        redirect: '/ordens',
+        redirect: '/dashboard',
+      },
+      {
+        path: '/dashboard',
+        component: () => import('pages/DashboardPage.vue'),
       },
       {
         path: '/ordens',

@@ -193,6 +193,17 @@
                         <div class="text-subtitle2 text-negative">Motivo do Cancelamento</div>
                         <div class="text-body1">{{ ordem.motivoCancelamento }}</div>
                       </div>
+
+                      <div v-if="ordem.dataPrevista" class="col-12 col-md-4">
+                        <div class="text-subtitle2 text-grey">Data Prevista</div>
+                        <div class="text-body1 row items-center q-gutter-xs">
+                          <q-badge
+                            :color="ordem.atrasada ? 'negative' : 'positive'"
+                            :icon="ordem.atrasada ? 'warning' : 'event'"
+                          />
+                          <span>{{ ordem.dataPrevista }}</span>
+                        </div>
+                      </div>
                     </div>
 
                     <q-separator class="q-my-md" />
@@ -393,6 +404,10 @@ async function verHistorico(cliente) {
             })),
             oficina: mecanico?.oficina_nome || null,
             mecanico: mecanico?.mecanico_nome || null,
+            dataPrevista: ordemCompleta.data_prevista
+              ? new Date(ordemCompleta.data_prevista).toLocaleDateString('pt-BR')
+              : null,
+            atrasada: ordemCompleta.status === 'Atrasada',
           }
         } catch {
           return {
@@ -411,6 +426,10 @@ async function verHistorico(cliente) {
             maoObra: [],
             oficina: null,
             mecanico: null,
+            dataPrevista: ordem.data_prevista
+              ? new Date(ordem.data_prevista).toLocaleDateString('pt-BR')
+              : null,
+            atrasada: ordem.status === 'Atrasada',
           }
         }
       }),

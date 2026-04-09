@@ -205,6 +205,18 @@
               <div class="text-subtitle2 text-negative">Motivo do Cancelamento</div>
               <div class="text-body1">{{ ordemSelecionada.motivoCancelamento }}</div>
             </div>
+
+            <div v-if="ordemSelecionada.dataPrevista" class="col-12 col-md-4">
+              <div class="text-subtitle2 text-grey">Data Prevista</div>
+              <div class="text-body1">
+                <q-badge
+                  :color="ordemSelecionada.atrasada ? 'negative' : 'positive'"
+                  :icon="ordemSelecionada.atrasada ? 'warning' : 'event'"
+                  class="q-mr-xs"
+                />
+                {{ ordemSelecionada.dataPrevista }}
+              </div>
+            </div>
           </div>
 
           <q-separator class="q-my-md" />
@@ -457,6 +469,10 @@ async function verDetalhes(ordemId) {
         valor: parseFloat(m.valor || 0),
       })),
       oficina: oficinaNome ? { nome: oficinaNome } : null,
+      dataPrevista: ordem.data_prevista
+        ? new Date(ordem.data_prevista).toLocaleDateString('pt-BR')
+        : null,
+      atrasada: ordem.status === 'Atrasada',
     }
     dialogDetalhes.value = true
   } catch {
