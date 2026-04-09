@@ -7,15 +7,14 @@
   >
     <q-card-section class="card-inner">
       <div class="card-icon-wrap">
-        <q-icon :name="icon" size="28px" color="white" />
+        <q-icon :name="icon" size="22px" color="white" />
       </div>
       <div class="card-content">
         <div class="card-title">{{ title }}</div>
-        <q-skeleton v-if="loading" type="text" width="80px" height="32px" class="q-mt-xs" />
+        <q-skeleton v-if="loading" type="text" width="60px" height="24px" class="q-mt-xs" />
         <div v-else class="card-value">{{ displayValue }}</div>
         <div v-if="subtitle && !loading" class="card-subtitle">{{ subtitle }}</div>
       </div>
-      <q-icon v-if="clickable && !loading" name="chevron_right" size="20px" class="card-arrow" />
     </q-card-section>
   </q-card>
 </template>
@@ -77,7 +76,7 @@ onUnmounted(() => cancelAnimationFrame(animFrame))
 
 <style scoped>
 .dashboard-card {
-  border-radius: 16px;
+  border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   border-top: 4px solid var(--card-color);
   transition:
@@ -91,55 +90,93 @@ onUnmounted(() => cancelAnimationFrame(animFrame))
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
 }
 
+/* Mobile: layout vertical, compacto */
 .card-inner {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
 }
 
 .card-icon-wrap {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   background: var(--card-color);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
 }
 
 .card-content {
-  flex: 1;
+  width: 100%;
   min-width: 0;
 }
 
 .card-title {
-  font-size: 0.78rem;
+  font-size: 0.65rem;
   font-weight: 600;
   color: #78909c;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 4px;
+  letter-spacing: 0.4px;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .card-value {
-  font-size: 1.6rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: #1a237e;
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .card-subtitle {
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   color: #90a4ae;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
-.card-arrow {
-  color: #90a4ae;
-  flex-shrink: 0;
+/* Tablet e desktop: layout horizontal */
+@media (min-width: 600px) {
+  .card-inner {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+  }
+
+  .card-icon-wrap {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+  }
+
+  .card-title {
+    font-size: 0.78rem;
+    margin-bottom: 4px;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  .card-value {
+    font-size: 1.6rem;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  .card-subtitle {
+    font-size: 0.75rem;
+  }
 }
 
 /* Dark mode */

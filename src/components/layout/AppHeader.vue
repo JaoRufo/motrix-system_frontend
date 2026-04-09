@@ -11,11 +11,17 @@
         class="lt-md"
       />
 
-      <q-toolbar-title class="text-weight-bold toolbar-title"> Sistema de Gestão </q-toolbar-title>
+      <q-toolbar-title class="text-weight-bold toolbar-title">
+        <span class="title-full">Sistema de Gestão</span>
+        <span class="title-short">Motrix</span>
+      </q-toolbar-title>
 
       <q-space />
 
-      <div v-if="oficinaUsuario" class="oficina-info text-subtitle2 q-mr-md text-primary text-weight-bold">
+      <div
+        v-if="oficinaUsuario"
+        class="oficina-info text-subtitle2 q-mr-md text-primary text-weight-bold"
+      >
         Oficina: {{ oficinaUsuario }}
       </div>
 
@@ -76,7 +82,7 @@ async function carregarOficina() {
   if (user?.role === 'user' && user?.id) {
     try {
       const mecanicos = await oficinaService.buscarMecanicos()
-      const mecanicoLogado = mecanicos.find(m => m.id === user.id)
+      const mecanicoLogado = mecanicos.find((m) => m.id === user.id)
       if (mecanicoLogado?.oficina_nome) {
         oficinaUsuario.value = mecanicoLogado.oficina_nome
       }
@@ -111,15 +117,27 @@ onMounted(() => {
   transition: all 0.3s ease-in-out;
 }
 
+.title-short {
+  display: none;
+}
+
 @media (max-width: 800px) {
   .toolbar-title {
     font-size: 1rem;
   }
-  
+
+  .title-full {
+    display: none;
+  }
+
+  .title-short {
+    display: inline;
+  }
+
   .oficina-info {
     display: none;
   }
-  
+
   .user-greeting {
     display: none;
   }
@@ -129,7 +147,7 @@ onMounted(() => {
   .oficina-info {
     font-size: 0.85rem;
   }
-  
+
   .user-greeting {
     font-size: 0.85rem;
   }

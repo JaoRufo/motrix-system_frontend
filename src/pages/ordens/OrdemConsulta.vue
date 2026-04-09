@@ -94,7 +94,30 @@
               outlined
               dense
               clearable
+              class="q-mb-md"
             />
+            <div class="row q-col-gutter-sm">
+              <div class="col-6">
+                <q-input
+                  v-model="filtro.dataInicio"
+                  label="Data Início"
+                  outlined
+                  dense
+                  mask="##/##/####"
+                  placeholder="DD/MM/AAAA"
+                />
+              </div>
+              <div class="col-6">
+                <q-input
+                  v-model="filtro.dataFim"
+                  label="Data Fim"
+                  outlined
+                  dense
+                  mask="##/##/####"
+                  placeholder="DD/MM/AAAA"
+                />
+              </div>
+            </div>
           </div>
         </q-card-section>
 
@@ -272,6 +295,8 @@ const filtro = ref({
   placa: '',
   id: '',
   status: '',
+  dataInicio: '',
+  dataFim: '',
 })
 
 const statusOptions = ['Aberta', 'Em Andamento', 'Aguardando Orçamento', 'Finalizada', 'Cancelada']
@@ -281,6 +306,8 @@ function limparFiltros() {
     placa: '',
     id: '',
     status: '',
+    dataInicio: '',
+    dataFim: '',
   }
 }
 
@@ -301,13 +328,31 @@ const ordensFiltradas = computed(() => {
     resultado = resultado.filter((o) => o.status?.toLowerCase() === needle)
   }
 
+  if (filtro.value.dataInicio) {
+    const [d, m, y] = filtro.value.dataInicio.split('/')
+    const inicio = new Date(`${y}-${m}-${d}T00:00:00`)
+    resultado = resultado.filter((o) => o.data && new Date(o.data) >= inicio)
+  }
+
+  if (filtro.value.dataFim) {
+    const [d, m, y] = filtro.value.dataFim.split('/')
+    const fim = new Date(`${y}-${m}-${d}T23:59:59`)
+    resultado = resultado.filter((o) => o.data && new Date(o.data) <= fim)
+  }
+
   return resultado
 })
 
 const totalFiltrado = computed(() => ordensFiltradas.value.length)
 
 const temFiltrosAtivos = computed(() => {
-  return !!(filtro.value.placa || filtro.value.id || filtro.value.status)
+  return !!(
+    filtro.value.placa ||
+    filtro.value.id ||
+    filtro.value.status ||
+    filtro.value.dataInicio ||
+    filtro.value.dataFim
+  )
 })
 
 const temCamposFiltro = computed(() => {

@@ -26,8 +26,8 @@
     </div>
 
     <!-- Linha 1: Cards de resumo -->
-    <div class="row q-col-gutter-md q-mb-md">
-      <div class="col-12 col-sm-6 col-md-3">
+    <div class="row q-col-gutter-sm q-mb-md">
+      <div class="col-6 col-lg-3">
         <DashboardCard
           title="Faturamento do Dia"
           :value="get(summary, 'faturamentoDia')"
@@ -38,7 +38,7 @@
           :is-float="true"
         />
       </div>
-      <div class="col-12 col-sm-6 col-md-3">
+      <div class="col-6 col-lg-3">
         <DashboardCard
           title="Faturamento do Mês"
           :value="get(summary, 'faturamentoMes')"
@@ -49,7 +49,7 @@
           :is-float="true"
         />
       </div>
-      <div class="col-12 col-sm-6 col-md-3">
+      <div class="col-6 col-lg-3">
         <DashboardCard
           title="Ordens Abertas"
           :value="get(summary, 'ordensAbertas')"
@@ -61,7 +61,7 @@
           @click="openModal('Aberta')"
         />
       </div>
-      <div class="col-12 col-sm-6 col-md-3">
+      <div class="col-6 col-lg-3">
         <DashboardCard
           title="Em Andamento"
           :value="get(summary, 'ordensEmAndamento')"
@@ -95,8 +95,8 @@
     </div>
 
     <!-- Linha 4: Cards de status -->
-    <div class="row q-col-gutter-md q-mb-md">
-      <div class="col-12 col-sm-6">
+    <div class="row q-col-gutter-sm q-mb-md">
+      <div class="col-6">
         <DashboardCard
           title="Ordens Finalizadas"
           :value="get(summary, 'ordensFinalizadas')"
@@ -108,7 +108,7 @@
           @click="openModal('Finalizada')"
         />
       </div>
-      <div class="col-12 col-sm-6">
+      <div class="col-6">
         <DashboardCard
           title="Ordens Atrasadas"
           :value="get(summary, 'ordensAtrasadas')"
@@ -170,6 +170,17 @@
             <template v-slot:body-cell-data="props">
               <q-td>{{ formatDate(props.row.data) }}</q-td>
             </template>
+            <template v-slot:body-cell-data_prevista="props">
+              <q-td>
+                <span
+                  :class="
+                    isAtrasada(props.row.data_prevista) ? 'text-negative text-weight-bold' : ''
+                  "
+                >
+                  {{ formatDate(props.row.data_prevista) }}
+                </span>
+              </q-td>
+            </template>
           </q-table>
         </q-card-section>
       </q-card>
@@ -178,7 +189,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { dashboardService } from 'src/services/dashboardService'
 import { ordemService } from 'src/services/ordemService'
@@ -201,14 +212,28 @@ const modalStatus = ref('')
 const modalLoading = ref(false)
 const modalRows = ref([])
 
-const modalColumns = [
-  { name: 'id', label: 'O.S', field: 'id', align: 'left', sortable: true },
-  { name: 'cliente', label: 'Cliente', field: 'cliente', align: 'left' },
-  { name: 'veiculo', label: 'Veículo / Placa', field: 'veiculo', align: 'left' },
-  { name: 'status', label: 'Status', field: 'status', align: 'left' },
-  { name: 'total', label: 'Total', field: 'total', align: 'left', sortable: true },
-  { name: 'data', label: 'Data', field: 'data', align: 'left', sortable: true },
-]
+const modalColumns = computed(() => {
+  const base = [
+    { name: 'id', label: 'O.S', field: 'id', align: 'left', sortable: true },
+    { name: 'cliente', label: 'Cliente', field: 'cliente', align: 'left' },
+    { name: 'veiculo', label: 'Veículo / Placa', field: 'veiculo', align: 'left' },
+    { name: 'status', label: 'Status', field: 'status', align: 'left' },
+    { name: 'total', label: 'Total', field: 'total', align: 'left', sortable: true },
+    { name: 'data', label: 'Data', field: 'data', align: 'left', sortable: true },
+  ]
+  const temDataPrevista =
+    modalStatus.value !== 'Finalizada' && modalRows.value.some((r) => !!r.data_prevista)
+  if (temDataPrevista) {
+    base.push({
+      name: 'data_prevista',
+      label: 'Data Prevista',
+      field: 'data_prevista',
+      align: 'left',
+      sortable: true,
+    })
+  }
+  return base
+})
 
 const statusColors = {
   Aberta: 'blue',
@@ -244,6 +269,11 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString('pt-BR')
 }
 
+function isAtrasada(dataPrevista) {
+  if (!dataPrevista) return false
+  return new Date(dataPrevista) < new Date()
+}
+
 async function openModal(status) {
   modalStatus.value = status
   modalOpen.value = true
@@ -257,11 +287,10 @@ async function openModal(status) {
     const filtradas = todas.filter((o) => {
       const s = (o.status || '').trim()
       if (status === 'Atrasada') {
-        // Filtra ordens com data_prevista vencida e status ainda aberto/em andamento
         if (!o.data_prevista) return false
         const prevista = new Date(o.data_prevista)
-        const abertaOuAndamento = s === 'Aberta' || s === 'Em Andamento'
-        return abertaOuAndamento && prevista < new Date()
+        const naoFinalizada = s !== 'Finalizada' && s !== 'Cancelada'
+        return naoFinalizada && prevista < new Date()
       }
       return s === status
     })
@@ -288,6 +317,7 @@ async function openModal(status) {
       status: o.status,
       total: parseFloat(o.total) || 0,
       data: o.created_at || o.data,
+      data_prevista: o.data_prevista || null,
     }))
   } catch {
     $q.notify({ type: 'negative', message: 'Erro ao carregar ordens' })
