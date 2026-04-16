@@ -38,6 +38,10 @@ export const ordemService = {
     return await http.delete(`/ordens/${id}`)
   },
 
+  async obterLinkWhatsApp(id) {
+    return await http.get(`/ordens/${id}/whatsapp`)
+  },
+
   async baixarPDF(id) {
     const blob = await http.downloadPDF(`/ordens/${id}/pdf`)
     const url = window.URL.createObjectURL(blob)

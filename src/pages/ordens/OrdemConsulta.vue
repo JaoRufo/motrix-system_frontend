@@ -56,6 +56,22 @@
             <q-btn icon="picture_as_pdf" flat round color="red" @click="baixarPDF(props.row.id)">
               <q-tooltip>Baixar PDF</q-tooltip>
             </q-btn>
+            <q-btn
+              icon="mdi-whatsapp"
+              flat
+              round
+              :color="props.row.status === 'Finalizada' ? 'green' : 'grey-6'"
+              :disable="props.row.status !== 'Finalizada'"
+              @click.stop="enviarWhatsApp(props.row.id)"
+            >
+              <q-tooltip>
+                {{
+                  props.row.status === 'Finalizada'
+                    ? 'Enviar WhatsApp'
+                    : 'Disponível apenas para ordens finalizadas'
+                }}
+              </q-tooltip>
+            </q-btn>
             <q-btn icon="delete" flat round color="negative" @click.stop="excluir(props.row.id)">
               <q-tooltip>Excluir</q-tooltip>
             </q-btn>
@@ -522,6 +538,15 @@ async function verDetalhes(ordemId) {
     dialogDetalhes.value = true
   } catch {
     $q.notify({ type: 'negative', message: 'Erro ao carregar detalhes da ordem' })
+  }
+}
+
+async function enviarWhatsApp(id) {
+  try {
+    const result = await ordemService.obterLinkWhatsApp(id)
+    window.open(result.link, '_blank')
+  } catch {
+    $q.notify({ type: 'negative', message: 'Erro ao gerar link do WhatsApp' })
   }
 }
 
