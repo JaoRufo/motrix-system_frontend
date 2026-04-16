@@ -56,6 +56,16 @@
             <q-btn icon="picture_as_pdf" flat round color="red" @click="baixarPDF(props.row.id)">
               <q-tooltip>Baixar PDF</q-tooltip>
             </q-btn>
+            <q-btn
+              icon="mdi-whatsapp"
+              flat
+              round
+              :color="whatsappBotaoCor(props.row)"
+              :disable="whatsappDesabilitado(props.row)"
+              @click.stop="enviarWhatsApp(props.row.id)"
+            >
+              <q-tooltip>{{ whatsappTooltip(props.row) }}</q-tooltip>
+            </q-btn>
             <q-btn icon="delete" flat round color="negative" @click.stop="excluir(props.row.id)">
               <q-tooltip>Excluir</q-tooltip>
             </q-btn>
@@ -409,6 +419,8 @@ async function carregar() {
         id: ordem.id,
         cliente: clienteNome,
         clienteId: ordem.cliente_id,
+        telefone:
+          ordem.cliente?.telefone || ordem.cliente_telefone || ordem.telefone_cliente || null,
         veiculo: ordem.veiculo
           ? `${ordem.veiculo.modelo} - ${ordem.veiculo.placa}`
           : ordem.veiculo_placa || 'N/A',
@@ -522,6 +534,38 @@ async function verDetalhes(ordemId) {
     dialogDetalhes.value = true
   } catch {
     $q.notify({ type: 'negative', message: 'Erro ao carregar detalhes da ordem' })
+  }
+}
+
+const STATUS_WHATSAPP = ['Finalizada', 'Aguardando Orçamento']
+
+function whatsappDesabilitado(row) {
+  if (!STATUS_WHATSAPP.includes(row.status)) return true
+  if (row.status === 'Aguardando Orçamento' && !row.pecas?.length && !row.maoObra?.length)
+    return true
+  return false
+}
+
+function whatsappBotaoCor(row) {
+  if (whatsappDesabilitado(row)) return 'grey-4'
+  return row.status === 'Finalizada' ? 'green' : 'teal'
+}
+
+function whatsappTooltip(row) {
+  if (!STATUS_WHATSAPP.includes(row.status))
+    return 'Disponível para: Finalizada ou Aguardando Orçamento'
+  if (row.status === 'Aguardando Orçamento' && !row.pecas?.length && !row.maoObra?.length)
+    return 'Adicione peças ou mão de obra antes de enviar o orçamento'
+  return row.status === 'Finalizada' ? 'Avisar cliente' : 'Enviar orçamento'
+}
+
+async function enviarWhatsApp(id) {
+  try {
+    const result = await ordemService.obterLinkWhatsApp(id)
+    window.open(result.link, '_blank')
+  } catch (err) {
+    const msg = err?.data?.message || err?.message || 'Erro ao gerar link do WhatsApp'
+    $q.notify({ type: 'negative', message: msg })
   }
 }
 
