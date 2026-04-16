@@ -6,6 +6,7 @@
       </q-btn>
       <div class="text-h6 text-weight-bold">Consulta de Clientes</div>
       <q-space />
+      <!-- Botão removido: cadastro via menu lateral (Clientes > Cadastro)
       <q-btn
         label="Novo Cliente"
         color="primary"
@@ -13,6 +14,7 @@
         to="/clientes/cadastro"
         class="btn-custom"
       />
+      -->
     </div>
 
     <q-card flat bordered>
@@ -442,13 +444,20 @@ async function verHistorico(cliente) {
   }
 }
 
-async function baixarPDF(ordemId) {
-  try {
-    await ordemService.baixarPDF(ordemId)
-    $q.notify({ type: 'positive', message: 'PDF baixado com sucesso!' })
-  } catch {
-    $q.notify({ type: 'negative', message: 'Erro ao baixar PDF' })
-  }
+function baixarPDF(ordemId) {
+  $q.dialog({
+    title: 'Baixar PDF',
+    message: 'Deseja baixar o PDF desta ordem de serviço?',
+    cancel: { label: 'Cancelar', flat: true, color: 'red' },
+    ok: { label: 'Confirmar', color: 'green' },
+  }).onOk(async () => {
+    try {
+      await ordemService.baixarPDF(ordemId)
+      $q.notify({ type: 'positive', message: 'PDF baixado com sucesso!' })
+    } catch {
+      $q.notify({ type: 'negative', message: 'Erro ao baixar PDF' })
+    }
+  })
 }
 
 function editarCliente(id) {
@@ -461,7 +470,7 @@ function excluir(id) {
   $q.dialog({
     title: 'Confirmar',
     message: 'Deseja realmente excluir este cliente?',
-    cancel: { label: 'Cancelar', flat: true },
+    cancel: { label: 'Cancelar', flat: true, color: 'negative' },
     ok: { label: 'Excluir', color: 'negative' },
   }).onOk(async () => {
     try {

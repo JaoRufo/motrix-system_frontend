@@ -575,20 +575,27 @@ function editarOrdem(id) {
   })
 }
 
-async function baixarPDF(id) {
-  try {
-    await ordemService.baixarPDF(id)
-    $q.notify({ type: 'positive', message: 'PDF baixado com sucesso!' })
-  } catch {
-    $q.notify({ type: 'negative', message: 'Erro ao baixar PDF' })
-  }
+function baixarPDF(id) {
+  $q.dialog({
+    title: 'Baixar PDF',
+    message: 'Deseja baixar o PDF desta ordem de serviço?',
+    cancel: { label: 'Cancelar', flat: true, color: 'red' },
+    ok: { label: 'Confirmar', color: 'green' },
+  }).onOk(async () => {
+    try {
+      await ordemService.baixarPDF(id)
+      $q.notify({ type: 'positive', message: 'PDF baixado com sucesso!' })
+    } catch {
+      $q.notify({ type: 'negative', message: 'Erro ao baixar PDF' })
+    }
+  })
 }
 
 function excluir(id) {
   $q.dialog({
     title: 'Confirmar',
     message: 'Deseja realmente excluir esta ordem de serviço?',
-    cancel: { label: 'Cancelar', flat: true },
+    cancel: { label: 'Cancelar', flat: true, color: 'negative' },
     ok: { label: 'Excluir', color: 'negative' },
   }).onOk(async () => {
     try {

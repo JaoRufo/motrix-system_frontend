@@ -6,6 +6,7 @@
       </q-btn>
       <div class="text-h6 text-weight-bold">Gerenciar Usuários</div>
       <q-space />
+      <!-- Botão removido: cadastro via menu lateral (Usuários > Cadastro)
       <q-btn
         label="Novo Usuário"
         color="primary"
@@ -13,6 +14,7 @@
         to="/usuarios/cadastro"
         class="btn-custom"
       />
+      -->
     </div>
 
     <q-card flat bordered>
@@ -266,10 +268,14 @@ onMounted(() => {
   carregar()
 })
 
-watch([totalUsuariosFiltrado, () => filtro.value], () => {
-  pagination.value.page = 1
-  atualizarPaginacao()
-}, { deep: true })
+watch(
+  [totalUsuariosFiltrado, () => filtro.value],
+  () => {
+    pagination.value.page = 1
+    atualizarPaginacao()
+  },
+  { deep: true },
+)
 </script>
 
 <style scoped>
