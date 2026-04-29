@@ -21,7 +21,7 @@
           <q-input v-model="form.email" label="E-mail *" outlined dense type="email" />
         </div>
 
-        <div class="col-12 col-md-6">
+        <!-- <div class="col-12 col-md-6">
           <q-input
             v-model="form.password"
             :label="isEdit ? 'Nova Senha (deixe em branco para manter)' : 'Senha *'"
@@ -37,7 +37,7 @@
               />
             </template>
           </q-input>
-        </div>
+        </div> -->
 
         <div class="col-12 col-md-6">
           <q-select
@@ -112,7 +112,7 @@ const $q = useQuasar()
 
 const salvando = ref(false)
 const isEdit = computed(() => !!route.params.id)
-const isPwd = ref(true)
+// const isPwd = ref(true)
 
 const roleOptions = ['user', 'admin']
 
@@ -126,7 +126,7 @@ const form = ref({
   oficina_nome: '',
   oficina_telefone: '',
   oficina_endereco: '',
-  mecanico_nome: ''
+  mecanico_nome: '',
 })
 
 function voltarSeguro() {
@@ -144,7 +144,13 @@ async function salvar() {
     return
   }
 
-  if (form.value.role === 'user' && (!form.value.oficina_nome || !form.value.oficina_telefone || !form.value.oficina_endereco || !form.value.mecanico_nome)) {
+  if (
+    form.value.role === 'user' &&
+    (!form.value.oficina_nome ||
+      !form.value.oficina_telefone ||
+      !form.value.oficina_endereco ||
+      !form.value.mecanico_nome)
+  ) {
     $q.notify({ type: 'negative', message: 'Preencha as informações da oficina' })
     return
   }
@@ -209,7 +215,7 @@ onMounted(async () => {
         oficina_nome: usuario.oficina_nome || '',
         oficina_telefone: usuario.oficina_telefone || '',
         oficina_endereco: usuario.oficina_endereco || '',
-        mecanico_nome: usuario.mecanico_nome || ''
+        mecanico_nome: usuario.mecanico_nome || '',
       }
     } catch (error) {
       $q.notify({ type: 'negative', message: getErrorMessage(error) })
