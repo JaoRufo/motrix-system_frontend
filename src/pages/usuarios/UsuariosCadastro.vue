@@ -113,6 +113,7 @@ const $q = useQuasar()
 const salvando = ref(false)
 const isEdit = computed(() => !!route.params.id)
 // const isPwd = ref(true)
+// teste
 
 const roleOptions = ['user', 'admin']
 
