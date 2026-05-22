@@ -75,13 +75,7 @@
         </div>
 
         <div class="col-12 col-md-3">
-          <q-input
-            v-model="dataPrevista"
-            label="Data Prevista (opcional)"
-            outlined
-            dense
-            type="date"
-          >
+          <q-input v-model="dataPrevista" label="Data Prevista *" outlined dense type="date">
             <template v-slot:prepend>
               <q-icon name="event" />
             </template>
@@ -381,6 +375,11 @@ async function salvar() {
     return
   }
 
+  if (!dataPrevista.value) {
+    $q.notify({ type: 'negative', message: 'Informe a data prevista para conclusão' })
+    return
+  }
+
   if (!descricaoProblema.value) {
     $q.notify({ type: 'negative', message: 'Descreva o problema relatado' })
     return
@@ -517,9 +516,7 @@ onMounted(async () => {
       descricaoProblema.value = ordem.descricao_problema || ''
       observacoes.value = ordem.observacoes || ''
       motivoCancelamento.value = ordem.motivo_cancelamento || ''
-      dataPrevista.value = ordem.data_prevista
-        ? ordem.data_prevista.slice(0, 10)
-        : ''
+      dataPrevista.value = ordem.data_prevista ? ordem.data_prevista.slice(0, 10) : ''
       pecas.value = (ordem.pecas || []).map((p) => ({
         nome: p.nome,
         valor: parseFloat(p.valor) || 0,
