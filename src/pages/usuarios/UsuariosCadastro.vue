@@ -21,7 +21,7 @@
           <q-input v-model="form.email" label="E-mail *" outlined dense type="email" />
         </div>
 
-        <!-- <div class="col-12 col-md-6">
+        <div class="col-12 col-md-6">
           <q-input
             v-model="form.password"
             :label="isEdit ? 'Nova Senha (deixe em branco para manter)' : 'Senha *'"
@@ -37,7 +37,7 @@
               />
             </template>
           </q-input>
-        </div> -->
+        </div>
 
         <div class="col-12 col-md-6">
           <q-select
@@ -112,7 +112,7 @@ const $q = useQuasar()
 
 const salvando = ref(false)
 const isEdit = computed(() => !!route.params.id)
-// const isPwd = ref(true)
+const isPwd = ref(true)
 
 const roleOptions = ['user', 'admin']
 
